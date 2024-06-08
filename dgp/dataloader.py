@@ -7,12 +7,13 @@ from .PCFG import PCFG
 import pickle as pkl
 
 def get_dataloader(
-        n_nouns: int = 10,
-        n_verbs: int = 10,
-        n_adjectives: int = 10,
-        n_pronouns: int = 10,
-        n_adverbs: int = 10,
-        n_conjunctions: int = 2,
+        language: str = 'english', # in ['english', 'expr', 'dyck']
+        config: dict = {'n_nouns': 10,
+                        'n_verbs': 10,
+                        'n_adjectives': 10,
+                        'n_pronouns': 10,
+                        'n_adverbs': 10,
+                        'n_conjunctions': 2}, # config for PCFG. see below for other languages.
         alpha: float = 1e5,
         prior_type: str = 'dirichlet',
         num_iters: int=1e6,
@@ -24,11 +25,21 @@ def get_dataloader(
     """Define the PCFG dataloader.
 
     Args:
-        n_nouns (int, optional): The number of nouns in the vocabulary. Defaults to 10.
-        n_verbs (int, optional): The number of verbs in the vocabulary. Defaults to 10.
-        n_adjectives (int, optional): The number of adjectives in the vocabulary. Defaults to 10.
-        n_pronouns (int, optional): The number of pronouns in the vocabulary. Defaults to 10.
-        n_adverbs (int, optional): The number of adverbs in the vocabulary. Defaults to 10.
+        language: The language of the PCFG. One of ['english', 'expr', 'dyck1', 'dyck2'].
+        config: The configuration of the PCFG. The keys depend on the language.
+        * For 'english':
+            n_nouns: The number of nouns in the vocabulary.
+            n_verbs: The number of verbs in the vocabulary.
+            n_adjectives: The number of adjectives in the vocabulary.
+            n_pronouns: The number of pronouns in the vocabulary.
+            n_adverbs: The number of adverbs in the vocabulary.
+            n_conjunctions: The number of conjunctions in the vocabulary.
+        * For 'expr':
+            n_digits: The number of digits in the vocabulary.
+            n_ops: The number of operations in the vocabulary.
+            bracket: Whether to include brackets in the vocabulary.
+        * For 'dyck':
+            n_brackets: The number of types brackets in the vocabulary.
         alpha (float, optional): The concentration parameter for the Dirichlet distribution. Defaults to 1e5.
         prior_type (str, optional): The type of prior distribution. Defaults to 'dirichlet'.
         num_iters (int, optional): The number of iterations to make in the training loop per epoch. Defaults to 1e6.
@@ -43,12 +54,8 @@ def get_dataloader(
 
     # Create a dataset
     dataset = PCFGDataset(
-            n_nouns=n_nouns,
-            n_verbs=n_verbs,
-            n_adjectives=n_adjectives,
-            n_pronouns=n_pronouns,
-            n_adverbs=n_adverbs,
-            n_conjunctions=n_conjunctions,
+            language=language,
+            config=config,
             alpha=alpha,
             prior_type=prior_type,
             num_iters=num_iters,
@@ -72,12 +79,13 @@ def get_dataloader(
 
 class PCFGDataset():
     def __init__(self,
-        n_nouns: int = 10,
-        n_verbs: int = 10,
-        n_adjectives: int = 10,
-        n_pronouns: int = 10,
-        n_adverbs: int = 10,
-        n_conjunctions: int = 2,
+        language: str = 'english', # in ['english', 'expr', 'dyck']
+        config: dict = {'n_nouns': 10,
+                        'n_verbs': 10,
+                        'n_adjectives': 10,
+                        'n_pronouns': 10,
+                        'n_adverbs': 10,
+                        'n_conjunctions': 2}, # config for PCFG. see below for other languages.
         alpha: float = 1e5,
         prior_type: str = 'dirichlet',
         num_iters: int=1e6,
@@ -87,11 +95,21 @@ class PCFGDataset():
         """Define the PCFG dataset.
 
         Args:
-            n_nouns (int, optional): The number of nouns in the vocabulary. Defaults to 10.
-            n_verbs (int, optional): The number of verbs in the vocabulary. Defaults to 10.
-            n_adjectives (int, optional): The number of adjectives in the vocabulary. Defaults to 10.
-            n_pronouns (int, optional): The number of pronouns in the vocabulary. Defaults to 10.
-            n_adverbs (int, optional): The number of adverbs in the vocabulary. Defaults to 10.
+            language: The language of the PCFG. One of ['english', 'expr', 'dyck1', 'dyck2'].
+            config: The configuration of the PCFG. The keys depend on the language.
+            * For 'english':
+                n_nouns: The number of nouns in the vocabulary.
+                n_verbs: The number of verbs in the vocabulary.
+                n_adjectives: The number of adjectives in the vocabulary.
+                n_pronouns: The number of pronouns in the vocabulary.
+                n_adverbs: The number of adverbs in the vocabulary.
+                n_conjunctions: The number of conjunctions in the vocabulary.
+            * For 'expr':
+                n_digits: The number of digits in the vocabulary.
+                n_ops: The number of operations in the vocabulary.
+                bracket: Whether to include brackets in the vocabulary.
+            * For 'dyck':
+                n_brackets: The number of types brackets in the vocabulary.
             alpha (float, optional): The concentration parameter for the Dirichlet distribution. Defaults to 1e5.
             prior_type (str, optional): The type of prior distribution. Defaults to 'dirichlet'.
             num_iters (int, optional): The number of iterations to make in the training loop per epoch. Defaults to 1e6.
@@ -118,12 +136,8 @@ class PCFGDataset():
 
         # Define the PCFG
         self.PCFG = PCFG(
-            n_nouns=n_nouns,
-            n_verbs=n_verbs,
-            n_adjectives=n_adjectives,
-            n_pronouns=n_pronouns,
-            n_adverbs=n_adverbs,
-            n_conjunctions=n_conjunctions,
+            language=language,
+            config=config,
             alpha=alpha,
             prior_type=prior_type,
             seed=seed,

@@ -23,12 +23,8 @@ def main(cfg):
 
     # Dataloader
     dataloader = get_dataloader(
-        n_nouns=cfg.data.n_nouns,
-        n_verbs=cfg.data.n_verbs,
-        n_adjectives=cfg.data.n_adjectives,
-        n_pronouns=cfg.data.n_pronouns,
-        n_adverbs=cfg.data.n_adverbs,
-        n_conjunctions=cfg.data.n_conjunctions,
+        language=cfg.data.language,
+        config=cfg.data.config,
         alpha=cfg.data.alpha,
         prior_type=cfg.data.prior_type,
         num_iters=cfg.data.num_iters * cfg.data.batch_size,

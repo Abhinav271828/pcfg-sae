@@ -82,12 +82,13 @@ class PCFG:
 
     def __init__(
             self,
-            n_nouns: int = 10,
-            n_verbs: int = 10,
-            n_adjectives: int = 10,
-            n_pronouns: int = 10,
-            n_adverbs: int = 10,
-            n_conjunctions: int = 2,
+            language : str = 'english', # in ['english', 'expr', 'dyck']
+            config : dict = {'n_nouns': 10,
+                             'n_verbs': 10,
+                             'n_adjectives': 10,
+                             'n_pronouns': 10,
+                             'n_adverbs': 10,
+                             'n_conjunctions': 2}, # config depends on the language; see below
             alpha: float = 1e5,
             prior_type: str = 'dirichlet',
             tasks: dict = None,
@@ -96,12 +97,21 @@ class PCFG:
         """Define the PCFG object.
 
         Args:
-            n_nouns: The number of nouns in the vocabulary.
-            n_verbs: The number of verbs in the vocabulary.
-            n_adjectives: The number of adjectives in the vocabulary.
-            n_pronouns: The number of pronouns in the vocabulary.
-            n_adverbs: The number of adverbs in the vocabulary.
-            n_conjunctions: The number of conjunctions in the vocabulary.
+            language: The language of the PCFG. One of ['english', 'expr', 'dyck1', 'dyck2'].
+            config: The configuration of the PCFG. The keys depend on the language.
+            * For 'english':
+                n_nouns: The number of nouns in the vocabulary.
+                n_verbs: The number of verbs in the vocabulary.
+                n_adjectives: The number of adjectives in the vocabulary.
+                n_pronouns: The number of pronouns in the vocabulary.
+                n_adverbs: The number of adverbs in the vocabulary.
+                n_conjunctions: The number of conjunctions in the vocabulary.
+            * For 'expr':
+                n_digits: The number of digits in the vocabulary.
+                n_ops: The number of operations in the vocabulary.
+                bracket: Whether to include brackets in the vocabulary.
+            * For 'dyck':
+                n_brackets: The number of types brackets in the vocabulary.
             alpha: The concentration parameter for the Dirichlet distribution.
             prior_type: The type of prior distribution.
             tasks: The tasks to perform.
@@ -115,27 +125,49 @@ class PCFG:
         random.seed(seed)
         np.random.seed(seed)
 
-        # Concept classes object
-        self.n_nouns = n_nouns
-        self.n_verbs = n_verbs
-        self.n_adjectives = n_adjectives
-        self.n_pronouns = n_pronouns
-        self.n_adverbs = n_adverbs
-        self.n_conjunctions = n_conjunctions
+        self.language = language
         self.alpha = alpha
         self.prior_type = prior_type
         
         # Grammar
         self.production_rules = None
         self.lexical_symbolic_rules = None
-        self.grammar = self.create_grammar(
-            n_nouns=n_nouns,
-            n_verbs=n_verbs,
-            n_adjectives=n_adjectives,
-            n_pronouns=n_pronouns,
-            n_adverbs=n_adverbs,
-            n_conjunctions=n_conjunctions,
-        )
+
+        # Concept classes object
+        if language == 'english':
+            self.n_nouns = config['n_nouns']
+            self.n_verbs = config['n_verbs']
+            self.n_adjectives = config['n_adjectives']
+            self.n_pronouns = config['n_pronouns']
+            self.n_adverbs = config['n_adverbs']
+            self.n_conjunctions = config['n_conjunctions']
+            self.grammar = self.create_grammar_english(
+                n_nouns=self.n_nouns,
+                n_verbs=self.n_verbs,
+                n_adjectives=self.n_adjectives,
+                n_pronouns=self.n_pronouns,
+                n_adverbs=self.n_adverbs,
+                n_conjunctions=self.n_conjunctions,
+                )
+
+        elif language == 'expr':
+            self.n_digits = config['n_digits']
+            self.n_ops = config['n_ops']
+            self.bracket = config['bracket']
+            self.grammar = self.create_grammar_expr(
+                n_digits=self.n_digits,
+                n_ops=self.n_ops,
+                bracket=self.bracket,
+                )
+
+        elif language == 'dyck':
+            self.n_brackets = config['n_brackets']
+            self.grammar = self.create_grammar_dyck(
+                n_brackets=self.n_brackets,
+            )
+
+        else:
+            raise ValueError(f"Language {language} not supported. Options are ['english', 'expr', 'dyck1', 'dyck2'].")
 
         # Tasks
         self.tasks = tasks
@@ -147,7 +179,7 @@ class PCFG:
         self.parser = nltk.ViterbiParser(self.grammar)
 
 
-    def create_grammar(
+    def create_grammar_english(
             self, 
             n_nouns: int,
             n_verbs: int,
@@ -195,6 +227,87 @@ class PCFG:
         # Create the grammar
         return ProbabilisticGenerator.fromstring(self.production_rules + self.lexical_symbolic_rules)
 
+    def create_grammar_expr(
+            self, 
+            n_digits: int,
+            n_ops: int,
+            bracket: bool,
+            ):
+        """Define the PCFG grammar.
+
+        Args:
+            n_digits: The number of digits in the vocabulary.
+            n_ops: The number of operations in the vocabulary.
+            bracket: Whether to include brackets in the vocabulary.
+
+        Returns:
+            The PCFG grammar.
+        """
+
+        # Define production rules
+        if bracket:
+            self.production_rules = """
+                    S -> Expr [1.0]
+                    Expr -> Expr Op Expr [0.33] | '(' Expr ')' [0.33] | Digit [0.34]
+                    """
+        else:
+            self.production_rules = """
+                    S -> Expr [1.0]
+                    Expr -> Expr Op Expr [0.5] | Digit [0.5]
+                    """
+        
+        self.lexical_symbolic_rules = ""
+
+        ## Define lexical rules
+        symbol_types = ['Digit', 'Op']
+        n_symbol_to_tokens = [n_digits, n_ops]
+        token_prefix = ['dig', 'op']
+
+        for symbol_type, n_symbol_to_token, prefix in zip(symbol_types, n_symbol_to_tokens, token_prefix):
+            prior_over_symbol = define_prior(n_symbol_to_token, alpha=self.alpha, prior_type=self.prior_type)
+            rhs_symbol = ""
+            for i in range(n_symbol_to_token):
+                rhs_symbol += f"'{prefix}{i}' [{prior_over_symbol[i]}] | "
+            rhs_symbol = rhs_symbol[:-3]
+            self.lexical_symbolic_rules += f"{symbol_type} -> {rhs_symbol} \n"
+
+        # Create the grammar
+        return ProbabilisticGenerator.fromstring(self.production_rules + self.lexical_symbolic_rules)
+
+    def create_grammar_dyck(
+            self, 
+            n_brackets: int,
+            ):
+        """Define the PCFG grammar.
+
+        Args:
+            n_brackets: The number of types brackets in the vocabulary.
+
+        Returns:
+            The PCFG grammar.
+        """
+
+        # Define production rules
+        p = 0.33
+        # Probability of generating a new bracket.
+        # This is the highest probability that doesn't lead to infinite recursion.
+        self.production_rules = f"""
+                S -> S S [{p}]"""
+        remaining_p = 1 - p
+
+        for i in range(n_brackets-1):
+            self.production_rules += f" | Brack{i} [{remaining_p/n_brackets:0.2f}]"
+            p += eval(f'{remaining_p/n_brackets:0.2f}')
+        self.production_rules += f" | Brack{n_brackets-1} [{1-p}]\n"
+
+        for i in range(n_brackets):
+            self.production_rules += f"Brack{i} -> 'o{i}' S 'c{i}' [0.50] | 'o{i}' 'c{i}' [0.50]\n"
+        
+        self.lexical_symbolic_rules = ""
+
+        # Create the grammar
+        return ProbabilisticGenerator.fromstring(self.production_rules + self.lexical_symbolic_rules)
+
 
     def gather_vocabulary(self):
         """Gather the vocabulary from the concept classes.
@@ -204,14 +317,34 @@ class PCFG:
         """
 
         # Gather concept classes' vocabulary
-        n_symbol_to_tokens = [self.n_nouns, self.n_verbs, self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
-        token_prefix = ['noun', 'verb', 'adj', 'pro', 'adv', 'conj']
         vocab = {}
         vocab_size = 0
-        for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
-            for i in range(n_symbol_to_token):
-                vocab[f'{prefix}{i}'] = vocab_size
+        if self.language == 'english':
+            n_symbol_to_tokens = [self.n_nouns, self.n_verbs, self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
+            token_prefix = ['noun', 'verb', 'adj', 'pro', 'adv', 'conj']
+            for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
+                for i in range(n_symbol_to_token):
+                    vocab[f'{prefix}{i}'] = vocab_size
+                    vocab_size += 1
+        elif self.language == 'expr':
+            n_symbol_to_tokens = [self.n_digits, self.n_ops]
+            token_prefix = ['dig', 'op']
+            for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
+                for i in range(n_symbol_to_token):
+                    vocab[f'{prefix}{i}'] = vocab_size
+                    vocab_size += 1
+            if self.bracket:
+                vocab['('] = vocab_size
                 vocab_size += 1
+                vocab[')'] = vocab_size
+                vocab_size += 1
+        elif self.language == 'dyck':
+            n_symbol_to_tokens = [self.n_brackets, self.n_brackets]
+            token_prefix = ['o', 'c']
+            for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
+                for i in range(n_symbol_to_token):
+                    vocab[f'{prefix}{i}'] = vocab_size
+                    vocab_size += 1
         vocab_size = len(vocab)
 
         # Add special tokens to be used for defining sequences in dataloader
