@@ -7,7 +7,7 @@ bf16: True
 epochs: 1
 
 data:
-  language: 'dyck' # ['english', 'expr', 'dyck']
+  language: 'english' # ['english', 'expr', 'dyck']
   config:
     n_nouns: 10 # for english
     n_verbs: 10
