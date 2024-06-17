@@ -7,17 +7,17 @@ bf16: True
 epochs: 1
 
 data:
-  language: 'english' # ['english', 'expr', 'dyck']
+  language: 'expr' # ['english', 'expr', 'dyck']
   config:
-    n_nouns: 10 # for english
-    n_verbs: 10
-    n_adjectives: 10
-    n_pronouns: 10
-    n_adverbs: 10
-    n_conjunctions: 10
-    # n_digits: 10 # for expr
-    # n_ops: 4
-    # bracket: true
+    # n_nouns: 10 # for english
+    # n_verbs: 10
+    # n_adjectives: 10
+    # n_pronouns: 10
+    # n_adverbs: 10
+    # n_conjunctions: 10
+    n_digits: 10 # for expr
+    n_ops: 4
+    postfix: false
     # n_brackets: 2 # for dyck
   alpha: 1e5 # depends on the prior type
   prior_type: 'dirichlet' # ['dirichlet', 'zipfian', 'structured_zeros', 'uniform']

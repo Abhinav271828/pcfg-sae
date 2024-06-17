@@ -109,7 +109,7 @@ class PCFG:
             * For 'expr':
                 n_digits: The number of digits in the vocabulary.
                 n_ops: The number of operations in the vocabulary.
-                bracket: Whether to include brackets in the vocabulary.
+                postfix: Whether the grammar is postfix or prefix.
             * For 'dyck':
                 n_brackets: The number of types brackets in the vocabulary.
             alpha: The concentration parameter for the Dirichlet distribution.
@@ -153,11 +153,11 @@ class PCFG:
         elif language == 'expr':
             self.n_digits = config['n_digits']
             self.n_ops = config['n_ops']
-            self.bracket = config['bracket']
+            self.postfix = config['postfix']
             self.grammar = self.create_grammar_expr(
                 n_digits=self.n_digits,
                 n_ops=self.n_ops,
-                bracket=self.bracket,
+                postfix=self.postfix,
                 )
 
         elif language == 'dyck':
@@ -231,37 +231,38 @@ class PCFG:
             self, 
             n_digits: int,
             n_ops: int,
-            bracket: bool,
+            postfix: bool,
             ):
         """Define the PCFG grammar.
 
         Args:
             n_digits: The number of digits in the vocabulary.
             n_ops: The number of operations in the vocabulary.
-            bracket: Whether to include brackets in the vocabulary.
+            postfix: Whether the grammar is postfix or prefix.
 
         Returns:
             The PCFG grammar.
         """
 
         # Define production rules
-        if bracket:
-            self.production_rules = """
-                    S -> Expr [1.0]
-                    Expr -> Expr Op Expr [0.33] | '(' Expr ')' [0.33] | Digit [0.34]
+        self.production_rules = """
+                S -> Expr [1.0]
+                Expr -> OpExpr [0.40] | Digit [0.60]"""
+        if postfix:
+            self.production_rules += """
+                    OpExpr -> UnOp Expr [0.33] | BinOp Expr Expr [0.33] | TernOp Expr Expr Expr [0.34]
                     """
         else:
-            self.production_rules = """
-                    S -> Expr [1.0]
-                    Expr -> Expr Op Expr [0.5] | Digit [0.5]
+            self.production_rules += """
+                    OpExpr -> Expr UnOp [0.33] | Expr Expr BinOp [0.33] | Expr Expr Expr TernOp [0.34]
                     """
         
         self.lexical_symbolic_rules = ""
 
         ## Define lexical rules
-        symbol_types = ['Digit', 'Op']
-        n_symbol_to_tokens = [n_digits, n_ops]
-        token_prefix = ['dig', 'op']
+        symbol_types = ['Digit', 'UnOp', 'BinOp', 'TernOp']
+        n_symbol_to_tokens = [n_digits, n_ops, n_ops, n_ops]
+        token_prefix = ['dig', 'un', 'bin', 'tern']
 
         for symbol_type, n_symbol_to_token, prefix in zip(symbol_types, n_symbol_to_tokens, token_prefix):
             prior_over_symbol = define_prior(n_symbol_to_token, alpha=self.alpha, prior_type=self.prior_type)
@@ -327,17 +328,12 @@ class PCFG:
                     vocab[f'{prefix}{i}'] = vocab_size
                     vocab_size += 1
         elif self.language == 'expr':
-            n_symbol_to_tokens = [self.n_digits, self.n_ops]
-            token_prefix = ['dig', 'op']
+            n_symbol_to_tokens = [self.n_digits, self.n_ops, self.n_ops, self.n_ops]
+            token_prefix = ['dig', 'un', 'bin', 'tern']
             for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
                 for i in range(n_symbol_to_token):
                     vocab[f'{prefix}{i}'] = vocab_size
                     vocab_size += 1
-            if self.bracket:
-                vocab['('] = vocab_size
-                vocab_size += 1
-                vocab[')'] = vocab_size
-                vocab_size += 1
         elif self.language == 'dyck':
             n_symbol_to_tokens = [self.n_brackets, self.n_brackets]
             token_prefix = ['o', 'c']
