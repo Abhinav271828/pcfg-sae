@@ -12,3 +12,4 @@ with open(os.path.join(path, 'grammar/PCFG.pkl'), 'rb') as f:
     pcfg = pkl.load(f)
 model = GPT(cfg.model, pcfg.vocab_size)
 model.load_state_dict(state_dict['net'])
+model.eval()
