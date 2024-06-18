@@ -8,8 +8,6 @@ import os
 import pickle as pkl
 from tqdm import tqdm
 
-path = 'results/scratch/m9z0jetl'
-
 class SAEData(Dataset):
     def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1):
         """
