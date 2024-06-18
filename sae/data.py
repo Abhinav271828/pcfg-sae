@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import Dataset
 
 from model import GPT
 from dgp import get_dataloader
@@ -9,7 +10,7 @@ from tqdm import tqdm
 
 path = 'results/scratch/m9z0jetl'
 
-class SAEData:
+class SAEData(Dataset):
     def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1):
         """
         A class to generate data to train the SAE. It extracts activations from a GPT model and saves them to a file.
@@ -28,7 +29,12 @@ class SAEData:
         
         The saved data consists of two tensors:
             * sequences  : [num_samples * batch_size, seq_len] the input sequences
-            * activations: [num_samples * batch_size, seq_len, emb_dim] the activations
+            * activations: [total_tokens, emb_dim] the activations (flattened across batch dimension and padding tokens removed)
+            * seq_ids    : [total_tokens] the sequence ids
+        The data is valid if:
+            * activations.size(0) == seq_ids.size(0) <= sequences.size(0)
+                - [equality means there are no padding tokens in the sequences]
+            * seq_ids[-1] = sequences.size(0) - 1
         """
         self.data_path = data_path
         self.model_dir = model_dir
@@ -63,10 +69,12 @@ class SAEData:
         save_dir = self.model_dir if self.model_dir else self.data_path
         torch.save(self.sequences, os.path.join(save_dir, 'sae_sequences.pt'))
         torch.save(self.activations, os.path.join(save_dir, 'sae_activations.pt'))
+        torch.save(self.seq_ids, os.path.join(save_dir, 'sae_seq_ids.pt'))
 
     def load_data(self):
         self.sequences = torch.load(os.path.join(self.data_path, 'sae_sequences.pt'))
         self.activations = torch.load(os.path.join(self.data_path, 'sae_activations.pt'))
+        self.seq_ids = torch.load(os.path.join(self.data_path, 'sae_seq_ids.pt'))
 
     def generate_activations(self):
        
@@ -84,10 +92,17 @@ class SAEData:
                 handle = self.model.transformer.ln_f.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
 
         sequences = []
+        seq_ids = []
         i = 0
+        seq = 0
         for sequence, length in tqdm(self.dataloader, desc='Extracting', total=self.num_samples if self.num_samples > 0 else len(self.dataloader)):
             self.model(sequence)
+            length = [int(l) for l in length.tolist()]
+            activation[-1] = torch.cat([activation[-1][i][:l] for i, l in enumerate(length)], dim=0)
             sequences.append(sequence)
+            for l in length:
+                seq_ids += [seq] * int(l)
+                seq += 1
             i += 1
             if self.num_samples > 0 and i >= self.num_samples:
                 break
@@ -95,9 +110,17 @@ class SAEData:
         handle.remove()
 
         self.activations = torch.cat(activation, dim=0)
-        # [num_samples * batch_size, seq_len, emb_dim]
+        # [total_tokens, emb_dim]
         self.sequences = torch.cat(sequences, dim=0)
         # [num_samples * batch_size, seq_len]
+        self.seq_ids = torch.tensor(seq_ids)
+        # [total_tokens]
+
+    def __len__(self):
+        return self.sequences.size(0)
+
+    def __getitem__(self, idx):
+        return self.sequences[idx], self.activations[idx]
 
 """
 GPT(
