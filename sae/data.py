@@ -115,10 +115,10 @@ class SAEData(Dataset):
         # [total_tokens]
 
     def __len__(self):
-        return self.sequences.size(0)
+        return self.activations.size(0)
 
     def __getitem__(self, idx):
-        return self.sequences[idx], self.activations[idx]
+        return self.seq_ids[idx], self.activations[idx]
 
 """
 GPT(
