@@ -41,6 +41,7 @@ class SAEData(Dataset):
         self.num_samples = num_samples
 
         if self.model_dir and self.ckpt:
+            print("Loading model...")
             model_dict = torch.load(os.path.join(self.model_dir, self.ckpt))
             cfg = model_dict['config']
             with open(os.path.join(self.model_dir, 'grammar/PCFG.pkl'), 'rb') as f:
@@ -58,9 +59,11 @@ class SAEData(Dataset):
                                 seed=cfg.seed,
                                 batch_size=cfg.data.batch_size,
                                 num_workers=cfg.data.num_workers)
+            print("Generating activations...")
             self.generate_activations()
             self.save_data()
         else:
+            print("Loading data...")
             self.load_data()
     
     def save_data(self):

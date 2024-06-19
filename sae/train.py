@@ -40,6 +40,7 @@ train_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name,
 dev_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, int(0.05 * args.num_samples))
 train_dl = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 val_dl = DataLoader(dev_data, batch_size=args.batch_size, shuffle=False)
+print("Data loaded.")
 
 embedding_size = train_data.activations.size(-1)
 model = SAE(embedding_size, args.exp_factor * embedding_size, k=-1 if args.alpha else args.k)
