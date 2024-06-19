@@ -38,10 +38,10 @@ args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-train_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, args.num_samples, device=device)
-dev_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, int(0.05 * args.num_samples), device=device)
+train_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, args.num_samples, is_val=False, device=device)
+val_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, int(0.05 * args.num_samples), is_val=True, device=device)
 train_dl = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
-val_dl = DataLoader(dev_data, batch_size=args.batch_size, shuffle=False)
+val_dl = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
 print("Data loaded.")
 
 embedding_size = train_data.activations.size(-1)

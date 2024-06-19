@@ -9,7 +9,7 @@ import pickle as pkl
 from tqdm import tqdm
 
 class SAEData(Dataset):
-    def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1, device : str = 'cuda'):
+    def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1, is_val : bool = False, device : str = 'cuda'):
         """
         A class to generate data to train the SAE. It extracts activations from a GPT model and saves them to a file.
         params:
@@ -39,6 +39,7 @@ class SAEData(Dataset):
         self.ckpt = ckpt
         self.layer_name = layer_name
         self.num_samples = num_samples
+        self.is_val = is_val
         self.device = device
 
         if self.model_dir and self.ckpt:
@@ -69,14 +70,18 @@ class SAEData(Dataset):
     
     def save_data(self):
         save_dir = self.model_dir if self.model_dir else self.data_path
-        torch.save(self.sequences, os.path.join(save_dir, 'sae_sequences.pt'))
-        torch.save(self.activations, os.path.join(save_dir, 'sae_activations.pt'))
-        torch.save(self.seq_ids, os.path.join(save_dir, 'sae_seq_ids.pt'))
+        layer_name = self.layer_name if self.layer_name in ['wte', 'wpe', 'ln_f'] else f'{self.layer_name[1]}{self.layer_name[0]}'
+        save_prefix = layer_name + '_' + ('val' if self.is_val else 'train')
+        torch.save(self.sequences, os.path.join(save_dir, save_prefix + '_sequences.pt'))
+        torch.save(self.activations, os.path.join(save_dir, save_prefix + '_activations.pt'))
+        torch.save(self.seq_ids, os.path.join(save_dir, save_prefix + '_seq_ids.pt'))
 
     def load_data(self):
-        self.sequences = torch.load(os.path.join(self.data_path, 'sae_sequences.pt'))
-        self.activations = torch.load(os.path.join(self.data_path, 'sae_activations.pt'))
-        self.seq_ids = torch.load(os.path.join(self.data_path, 'sae_seq_ids.pt'))
+        layer_name = self.layer_name if self.layer_name in ['wte', 'wpe', 'ln_f'] else f'{self.layer_name[1]}{self.layer_name[0]}'
+        save_prefix = layer_name + '_' + ('val' if self.is_val else 'train')
+        self.sequences = torch.load(os.path.join(self.data_path, save_prefix + '_sequences.pt'))
+        self.activations = torch.load(os.path.join(self.data_path, save_prefix + '_activations.pt'))
+        self.seq_ids = torch.load(os.path.join(self.data_path, save_prefix + '_seq_ids.pt'))
 
     def generate_activations(self):
        
