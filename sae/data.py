@@ -44,7 +44,7 @@ class SAEData(Dataset):
 
         if self.model_dir and self.ckpt:
             print("Loading model...")
-            model_dict = torch.load(os.path.join(self.model_dir, self.ckpt))
+            model_dict = torch.load(os.path.join(self.model_dir, self.ckpt), map_location=self.device)
             cfg = model_dict['config']
             with open(os.path.join(self.model_dir, 'grammar/PCFG.pkl'), 'rb') as f:
                 pcfg = pkl.load(f)
