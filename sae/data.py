@@ -20,8 +20,8 @@ class SAEData(Dataset):
             * layer_name : name of the layer to extract activations from. one of
                 - "wte" [embedding layer]
                 - "wpe" [positional encoding layer]
-                - (n, "attn") : n-th attention layer; n = 0, 1
-                - (n, "mlp") : n-th mlp layer; n = 0, 1
+                - "attn{n}" [n-th attention layer; n = 0, 1]
+                - "mlp{n}" [n-th mlp layer; n = 0, 1]
                 - "ln_f" [final layer-norm before the LM-head]
             * num_samples: number of samples to generate activations for. If -1, all samples are used.
         
@@ -70,15 +70,13 @@ class SAEData(Dataset):
     
     def save_data(self):
         save_dir = self.model_dir if self.model_dir else self.data_path
-        layer_name = self.layer_name if self.layer_name in ['wte', 'wpe', 'ln_f'] else f'{self.layer_name[1]}{self.layer_name[0]}'
-        save_prefix = layer_name + '_' + ('val' if self.is_val else 'train')
+        save_prefix = self.layer_name + '_' + ('val' if self.is_val else 'train')
         torch.save(self.sequences, os.path.join(save_dir, save_prefix + '_sequences.pt'))
         torch.save(self.activations, os.path.join(save_dir, save_prefix + '_activations.pt'))
         torch.save(self.seq_ids, os.path.join(save_dir, save_prefix + '_seq_ids.pt'))
 
     def load_data(self):
-        layer_name = self.layer_name if self.layer_name in ['wte', 'wpe', 'ln_f'] else f'{self.layer_name[1]}{self.layer_name[0]}'
-        save_prefix = layer_name + '_' + ('val' if self.is_val else 'train')
+        save_prefix = self.layer_name + '_' + ('val' if self.is_val else 'train')
         self.sequences = torch.load(os.path.join(self.data_path, save_prefix + '_sequences.pt'))
         self.activations = torch.load(os.path.join(self.data_path, save_prefix + '_activations.pt'))
         self.seq_ids = torch.load(os.path.join(self.data_path, save_prefix + '_seq_ids.pt'))
@@ -91,10 +89,14 @@ class SAEData(Dataset):
                 handle = self.model.transformer.wte.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
             case "wpe":
                 handle = self.model.transformer.wpe.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case (n, "attn"):
-                handle = self.model.transformer.h[n].attn.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case (n, "mlp"):
-                handle = self.model.transformer.h[n].mlp.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
+            case "attn0":
+                handle = self.model.transformer.h[0].attn.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
+            case "mlp0":
+                handle = self.model.transformer.h[0].mlp.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
+            case "attn1":
+                handle = self.model.transformer.h[1].attn.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
+            case "mlp1":
+                handle = self.model.transformer.h[1].mlp.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
             case "ln_f":
                 handle = self.model.transformer.ln_f.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
 
