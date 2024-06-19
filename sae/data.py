@@ -9,7 +9,7 @@ import pickle as pkl
 from tqdm import tqdm
 
 class SAEData(Dataset):
-    def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1):
+    def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1, device : str = 'cuda'):
         """
         A class to generate data to train the SAE. It extracts activations from a GPT model and saves them to a file.
         params:
@@ -39,6 +39,7 @@ class SAEData(Dataset):
         self.ckpt = ckpt
         self.layer_name = layer_name
         self.num_samples = num_samples
+        self.device = device
 
         if self.model_dir and self.ckpt:
             print("Loading model...")
@@ -46,7 +47,7 @@ class SAEData(Dataset):
             cfg = model_dict['config']
             with open(os.path.join(self.model_dir, 'grammar/PCFG.pkl'), 'rb') as f:
                 pcfg = pkl.load(f)
-            self.model = GPT(cfg.model, pcfg.vocab_size)
+            self.model = GPT(cfg.model, pcfg.vocab_size).to(self.device)
             self.model.load_state_dict(model_dict['net'])
             self.model.eval()
             self.dataloader = get_dataloader(
@@ -97,7 +98,7 @@ class SAEData(Dataset):
         i = 0
         seq = 0
         for sequence, length in tqdm(self.dataloader, desc='Extracting', total=self.num_samples if self.num_samples > 0 else len(self.dataloader)):
-            self.model(sequence)
+            self.model(sequence.to(self.device))
             length = [int(l) for l in length.tolist()]
             activation[-1] = torch.cat([activation[-1][i][:l] for i, l in enumerate(length)], dim=0)
             sequences.append(sequence)
@@ -148,3 +149,4 @@ GPT(
   (LM_head): Linear(in_features=128, out_features=31, bias=False)
 )
 """
+

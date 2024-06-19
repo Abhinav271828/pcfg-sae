@@ -36,20 +36,21 @@ parser.add_argument("--patience",    help="Patience",
 
 args = parser.parse_args()
 
-train_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, args.num_samples)
-dev_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, int(0.05 * args.num_samples))
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+train_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, args.num_samples, device=device)
+dev_data = SAEData(args.data_path, args.model_dir, args.ckpt, args.layer_name, int(0.05 * args.num_samples), device=device)
 train_dl = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 val_dl = DataLoader(dev_data, batch_size=args.batch_size, shuffle=False)
 print("Data loaded.")
 
 embedding_size = train_data.activations.size(-1)
-model = SAE(embedding_size, args.exp_factor * embedding_size, k=-1 if args.alpha else args.k)
+model = SAE(embedding_size, args.exp_factor * embedding_size, k=-1 if args.alpha else args.k).to(device)
 model.train()
 
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = nn.MSELoss()
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Train the SAE
 wandb.init(project="sae")
@@ -61,6 +62,7 @@ loss_increasing = 0
 prev_loss = float('inf')
 for epoch in range(args.num_epochs):
     model.train()
+    train_loss = 0
     for seq_id, activation in tqdm(train_dl, desc="Training"):
         activation = activation.to(device)
         optimizer.zero_grad()
@@ -69,9 +71,8 @@ for epoch in range(args.num_epochs):
         loss += args.alpha * torch.norm(latent, p=1) if args.alpha else 0
         loss.backward()
         optimizer.step()
+        train_loss += loss.item()
 
-    wandb.log({'train_loss': loss.item()})
-    print("Epoch: %d, Loss: %.4f" % (epoch, loss.item()))
 
     if loss > prev_loss: loss_increasing += 1
     else: loss_increasing = 0
@@ -80,12 +81,16 @@ for epoch in range(args.num_epochs):
     prev_loss = loss
 
     model.eval()
+    val_loss = 0
     with torch.no_grad():
-        for seq_id, activation in val_dl:
+        for seq_id, activation in tqdm(val_dl, desc="Validating"):
             activation = activation.to(device)
             latent, recon = model(activation)
             loss = criterion(recon, activation)
-        wandb.log({'val_loss': loss.item()})
+            val_loss += loss.item()
+
+    wandb.log({'train_loss': train_loss / len(train_dl),
+               'val_loss'  : val_loss   / len(val_dl)  })
 
 i = 0
 while True:
