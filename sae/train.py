@@ -66,9 +66,10 @@ def train(args):
 
     i = 0
     while True:
-        dir_name = os.path.join(args.model_dir, f'sae_{i}')
+        dir_name = os.path.join(args.model_dir if args.model_dir else args.data_path, f'sae_{i}')
         if not os.path.exists(dir_name): break
         i += 1
+    os.mkdir(dir_name)
     torch.save(model.state_dict(), os.path.join(dir_name, 'model.pth'))
     with open(os.path.join(dir_name, 'config.json'), 'w') as f:
         json.dump(vars(args), f, indent=4)

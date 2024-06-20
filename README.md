@@ -42,6 +42,7 @@
     - the activations `{layer}_{split}_activations.pt`, containing the actual inputs to the autoencoder.
     - the sequence IDs `{layer}_{split}_seq_ids.pt`, containing the index of the sequence to which the token that generated the corresponding embedding is from.
     - the sequences `{layer}_{split}_sequences.pt`, containing the tokens that generated the embeddings, grouped into their sequences.
+- Trained SAEs are saved in a subdirectory `sae_{i}` (depending on how many SAEs have been saved previously for the same model), which contains a `config.json` with the above arguments and a `model.pth` file.
 
 # Model Checkpoints
 - `results/scratch/t3m8xzkd`: Model trained on English.
