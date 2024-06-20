@@ -16,7 +16,7 @@ data:
     # n_adverbs: 10
     # n_conjunctions: 10
     n_digits: 10 # for expr
-    n_ops: 4
+    n_ops: 3
     postfix: false
     # n_brackets: 2 # for dyck
   alpha: 1e5 # depends on the prior type
@@ -25,7 +25,7 @@ data:
   num_iters: 1e6
   batch_size: 128 
   # CORR: > 0 causes an error in pickling that I didn't understand.
-  num_workers: 0
+  num_workers: 8
 
 model:
   compile: False
