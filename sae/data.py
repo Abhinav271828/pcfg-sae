@@ -2,19 +2,18 @@ import torch
 from torch.utils.data import Dataset
 
 from model import GPT
-from dgp import get_dataloader
+from dgp import PCFGDataset
 
 import os
 import pickle as pkl
 from tqdm import tqdm
 
 class SAEData(Dataset):
-    def __init__(self, data_path : str, model_dir : str, ckpt : str, layer_name : str, num_samples : int = -1, is_val : bool = False, device : str = 'cuda'):
+    def __init__(self, model_dir : str, ckpt : str, layer_name : str, device : str = 'cuda'):
         """
-        A class to generate data to train the SAE. It extracts activations from a GPT model and saves them to a file.
+        A class to generate data to train the SAE. It returns a batch of activations from a specified layer by making
+        a forward pass through the GPT model. Note that this is online, and the activations are not cached.
         params:
-            * data_path  : path to the data dir. If model_dir and ckpt are provided, the data is saved to this path;
-                           otherwise, the data is loaded from this path
             * model_dir  : path to the directory containing the model
             * ckpt       : name of the checkpoint file
             * layer_name : name of the layer to extract activations from. one of
@@ -23,113 +22,72 @@ class SAEData(Dataset):
                 - "attn{n}" [n-th attention layer; n = 0, 1]
                 - "mlp{n}" [n-th mlp layer; n = 0, 1]
                 - "ln_f" [final layer-norm before the LM-head]
-            * num_samples: number of samples to generate activations for. If -1, all samples are used.
-        
-        The saved data consists of two tensors:
-            * sequences  : [num_samples * batch_size, seq_len] the input sequences
-            * activations: [total_tokens, emb_dim] the activations (flattened across batch dimension and padding tokens removed)
-            * seq_ids    : [total_tokens] the sequence ids
-        The data is valid if:
-            * activations.size(0) == seq_ids.size(0) <= sequences.size(0)
-                - [equality means there are no padding tokens in the sequences]
-            * seq_ids[-1] = sequences.size(0) - 1
+        Each returned sample consists of a tensor of shape [total_tokens, emb_dim], where
+            total_tokens is the actual length of the sequence (excluding the decorator, <eos>, and padding tokens), and
+            emb_dim is the dimension of the embeddings.
+        Batch collation is done by concatenating the samples along the first dimension. Note that this leads to a
+        variable batch size, as the lengths of sequences can vary.
         """
-        self.data_path = data_path
         self.model_dir = model_dir
         self.ckpt = ckpt
         self.layer_name = layer_name
-        self.num_samples = num_samples
-        self.is_val = is_val
         self.device = device
 
-        if self.model_dir and self.ckpt:
-            print("Loading model...")
-            model_dict = torch.load(os.path.join(self.model_dir, self.ckpt), map_location=self.device)
-            cfg = model_dict['config']
-            with open(os.path.join(self.model_dir, 'grammar/PCFG.pkl'), 'rb') as f:
-                pcfg = pkl.load(f)
-            self.model = GPT(cfg.model, pcfg.vocab_size).to(self.device)
-            self.model.load_state_dict(model_dict['net'])
-            self.model.eval()
-            self.dataloader = get_dataloader(
-                                language=cfg.data.language,
-                                config=cfg.data.config,
-                                alpha=cfg.data.alpha,
-                                prior_type=cfg.data.prior_type,
-                                num_iters=cfg.data.num_iters * cfg.data.batch_size,
-                                max_sample_length=cfg.data.max_sample_length,
-                                seed=cfg.seed,
-                                batch_size=cfg.data.batch_size,
-                                num_workers=cfg.data.num_workers)
-            print("Generating activations...")
-            self.generate_activations()
-            self.save_data()
-        else:
-            print("Loading data...")
-            self.load_data()
-    
-    def save_data(self):
-        save_dir = self.model_dir if self.model_dir else self.data_path
-        save_prefix = self.layer_name + '_' + ('val' if self.is_val else 'train')
-        torch.save(self.sequences, os.path.join(save_dir, save_prefix + '_sequences.pt'))
-        torch.save(self.activations, os.path.join(save_dir, save_prefix + '_activations.pt'))
-        torch.save(self.seq_ids, os.path.join(save_dir, save_prefix + '_seq_ids.pt'))
+        print("Loading model...")
+        model_dict = torch.load(os.path.join(self.model_dir, self.ckpt), map_location=self.device)
+        cfg = model_dict['config']
+        with open(os.path.join(self.model_dir, 'grammar/PCFG.pkl'), 'rb') as f:
+            pcfg = pkl.load(f)
+        self.model = GPT(cfg.model, pcfg.vocab_size).to(self.device)
+        self.model.load_state_dict(model_dict['net'])
+        self.model.eval()
+        self.dataset = PCFGDataset(
+            language=cfg.data.language,
+            config=cfg.data.config,
+            alpha=cfg.data.alpha,
+            prior_type=cfg.data.prior_type,
+            num_iters=cfg.data.num_iters * cfg.data.batch_size,
+            max_sample_length=cfg.data.max_sample_length,
+            seed=cfg.seed,
+        )
+        self.pad_token_id = self.dataset.pad_token_id
+        print("Model loaded.")
 
-    def load_data(self):
-        save_prefix = self.layer_name + '_' + ('val' if self.is_val else 'train')
-        self.sequences = torch.load(os.path.join(self.data_path, save_prefix + '_sequences.pt'))
-        self.activations = torch.load(os.path.join(self.data_path, save_prefix + '_activations.pt'))
-        self.seq_ids = torch.load(os.path.join(self.data_path, save_prefix + '_seq_ids.pt'))
+        self.activation = None
+        def hook(model, input, output):
+            self.activation = output.detach()
 
-    def generate_activations(self):
-       
-        activation = []
         match self.layer_name:
-            case "wte":
-                handle = self.model.transformer.wte.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "wpe":
-                handle = self.model.transformer.wpe.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "attn0":
-                handle = self.model.transformer.h[0].attn.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "mlp0":
-                handle = self.model.transformer.h[0].mlp.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "attn1":
-                handle = self.model.transformer.h[1].attn.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "mlp1":
-                handle = self.model.transformer.h[1].mlp.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-            case "ln_f":
-                handle = self.model.transformer.ln_f.register_forward_hook(lambda model, input, output: activation.append(output.detach()))
-
-        sequences = []
-        seq_ids = []
-        i = 0
-        seq = 0
-        for sequence, length in tqdm(self.dataloader, desc='Extracting', total=self.num_samples if self.num_samples > 0 else len(self.dataloader)):
-            self.model(sequence.to(self.device))
-            length = [int(l) for l in length.tolist()]
-            activation[-1] = torch.cat([activation[-1][i][:l] for i, l in enumerate(length)], dim=0)
-            sequences.append(sequence)
-            for l in length:
-                seq_ids += [seq] * int(l)
-                seq += 1
-            i += 1
-            if self.num_samples > 0 and i >= self.num_samples:
-                break
-
-        handle.remove()
-
-        self.activations = torch.cat(activation, dim=0)
-        # [total_tokens, emb_dim]
-        self.sequences = torch.cat(sequences, dim=0)
-        # [num_samples * batch_size, seq_len]
-        self.seq_ids = torch.tensor(seq_ids)
-        # [total_tokens]
+            case "wte":   module = self.model.transformer.wte
+            case "wpe":   module = self.model.transformer.wpe
+            case "attn0": module = self.model.transformer.h[0].attn
+            case "mlp0":  module = self.model.transformer.h[0].mlp
+            case "attn1": module = self.model.transformer.h[1].attn
+            case "mlp1":  module = self.model.transformer.h[1].mlp
+            case "ln_f":  module = self.model.transformer.ln_f
+        self.handle = module.register_forward_hook(hook)
 
     def __len__(self):
-        return self.activations.size(0)
+        return len(self.dataset)
 
     def __getitem__(self, idx):
-        return self.seq_ids[idx], self.activations[idx]
+        sequence, length = self.dataset[idx]
+        # [seq_len]
+
+        self.model(sequence.unsqueeze(0).to(self.device))
+        # [seq_len, emb_dim]
+        # results in self.activation being set
+        # with a tensor of shape [seq_len, emb_dim]
+
+        activation = self.activation.squeeze(0)[self.dataset.decorator_length:self.dataset.decorator_length + int(length)]
+        # [length, emb_dim]
+
+        return activation, sequence
+
+    def collate_fn(self, batch):
+        return torch.cat([x[0] for x in batch], dim=0), torch.stack([x[1] for x in batch], dim=0)
+        #      [total_tokens, emb_dim]                  [batch_size, seq_len]
+        # where total_tokens = length1 + length2 + ... + length_{batch_size}
 
 """
 GPT(
