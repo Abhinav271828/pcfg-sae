@@ -210,7 +210,11 @@ class PCFGDataset():
                 ))
 
             # Concatenate the instruction to the sequence
-            sequence = torch.cat((instr, sequence))
+            sequence = torch.cat((
+                instr,
+                sequence,
+                torch.tensor([self.PCFG.vocab['<eos>']])
+                ))
 
             # Truncate the sequence if it is longer than the max sequence length
             if sequence.size(0) > self.max_sample_length - 10:
