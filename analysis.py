@@ -3,9 +3,11 @@ from model import GPT
 import os
 import pickle as pkl
 
-path = 'results/scratch/m9z0jetl'
+from sae import SAEData
 
-state_dict = torch.load(os.path.join(path, 'latest_ckpt.pt'))
+path = 'results/scratch/t3m8xzkd'
+
+state_dict = torch.load(os.path.join(path, 'latest_ckpt.pt'), map_location='cpu')
 cfg = state_dict['config']
 
 with open(os.path.join(path, 'grammar/PCFG.pkl'), 'rb') as f:
@@ -13,3 +15,5 @@ with open(os.path.join(path, 'grammar/PCFG.pkl'), 'rb') as f:
 model = GPT(cfg.model, pcfg.vocab_size)
 model.load_state_dict(state_dict['net'])
 model.eval()
+
+data = SAEData(data_path=path, model_dir=path, ckpt='latest_ckpt.pt', layer_name='wte', num_samples=100, is_val=True, device='cpu').dataloader.dataset
