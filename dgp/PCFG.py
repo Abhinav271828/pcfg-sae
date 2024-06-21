@@ -250,11 +250,11 @@ class PCFG:
                 Expr -> OpExpr [0.40] | Digit [0.60]"""
         if postfix:
             self.production_rules += """
-                    OpExpr -> UnOp Expr [0.33] | BinOp Expr Expr [0.33] | TernOp Expr Expr Expr [0.34]
+                    OpExpr -> Expr UnOp [0.33] | Expr Expr BinOp [0.33] | Expr Expr Expr TernOp [0.34]
                     """
         else:
             self.production_rules += """
-                    OpExpr -> Expr UnOp [0.33] | Expr Expr BinOp [0.33] | Expr Expr Expr TernOp [0.34]
+                    OpExpr -> UnOp Expr [0.33] | BinOp Expr Expr [0.33] | TernOp Expr Expr Expr [0.34]
                     """
         
         self.lexical_symbolic_rules = ""
