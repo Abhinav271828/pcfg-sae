@@ -131,9 +131,6 @@ class PCFGDataset():
         self.task_tokens = list(self.tasks_dict.keys())
         self.prior_over_tasks = [1.0]
 
-        # Instruction decorator
-        self.instruction_decorator = 'Task: {task_token} \n Ops: {ops} \n Out:' 
-
         # Define the PCFG
         self.PCFG = PCFG(
             language=language,
@@ -143,6 +140,10 @@ class PCFGDataset():
             seed=seed,
             tasks=self.tasks_dict,
         )
+
+        # Instruction decorator
+        self.instruction_decorator = 'Task: {task_token} \n Ops: {ops} \n Out:' 
+        self.decorator_length = len(self.PCFG.tokenize_sentence(self.instruction_decorator.format(task_token='Task0', ops='<null>')))
 
         ## Special tokens
         # Pad token
