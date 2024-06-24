@@ -289,7 +289,7 @@ class PCFG:
         """
 
         # Define production rules
-        p = 0.33
+        p = 0.30
         # Probability of generating a new bracket.
         # This is the highest probability that doesn't lead to infinite recursion.
         self.production_rules = f"""
