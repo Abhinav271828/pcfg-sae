@@ -14,6 +14,6 @@ class SAE(nn.Module):
         if self.k > 0:
             values, indices = torch.topk(latent, self.k)
             latent = torch.zeros_like(latent)
-            latent.scatter_(1, indices, values)
+            latent.scatter_(-1, indices, values)
         recon = self.decoder(latent)
         return latent, recon
