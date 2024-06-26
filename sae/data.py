@@ -19,8 +19,9 @@ class SAEData(Dataset):
             * layer_name : name of the layer to extract activations from. one of
                 - "wte" [embedding layer]
                 - "wpe" [positional encoding layer]
-                - "attn{n}" [n-th attention layer; n = 0, 1]
-                - "mlp{n}" [n-th mlp layer; n = 0, 1]
+                - "attn{n}" [n-th layer's attention ; n = 0, 1]
+                - "mlp{n}" [n-th layer's mlp; n = 0, 1]
+                - "res{n}" [n-th layer; n = 0, 1]
                 - "ln_f" [final layer-norm before the LM-head]
         Each returned sample consists of a tensor of shape [total_tokens, emb_dim], where
             total_tokens is the actual length of the sequence (excluding the decorator, <eos>, and padding tokens), and
@@ -62,8 +63,10 @@ class SAEData(Dataset):
             case "wpe":   module = self.model.transformer.wpe
             case "attn0": module = self.model.transformer.h[0].attn
             case "mlp0":  module = self.model.transformer.h[0].mlp
+            case "res0":  module = self.model.transformer.h[0]
             case "attn1": module = self.model.transformer.h[1].attn
             case "mlp1":  module = self.model.transformer.h[1].mlp
+            case "res1":  module = self.model.transformer.h[1]
             case "ln_f":  module = self.model.transformer.ln_f
         self.handle = module.register_forward_hook(hook)
 

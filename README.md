@@ -24,8 +24,9 @@
     - layer_name: The layer of the model whose outputs we want to disentangle. Options are:
         - `wte` [embedding layer]
         - `wpe` [positional encoding layer]
-        - `attn{n}` [n-th attention layer; n = 0, 1]
-        - `mlp{n}` [n-th mlp layer; n = 0, 1]
+        - `attn{n}` [n-th layer's attention; n = 0, 1]
+        - `mlp{n}` [n-th layer's mlp; n = 0, 1]
+        - `res{n}` [n-th layer]
         - `ln_f` [final layer-norm before the LM-head]
     - batch_size: The batch size of the dataloader whose inputs generate the activations for the SAE.
     - exp_factor: The expansion factor of the SAE (the ratio of the hidden size to the input size).
@@ -41,4 +42,6 @@
 - Trained SAEs are saved in a subdirectory `sae_{i}` (depending on how many SAEs have been saved previously for the same model), which contains a `config.json` with the above arguments and a `model.pth` file.
 
 # Model Checkpoints
-- `results/scratch/t3m8xzkd`: Model trained on English.
+- `results/scratch/12owob2t`: Model trained on prefix Expr. The SAEs are:
+    - 0-215: $\alpha$-regularized sweep. Best one 206.
+    - 216-395: $k$-regularized sweep. Best one 329.
