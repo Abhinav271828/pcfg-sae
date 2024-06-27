@@ -43,5 +43,11 @@
 
 # Model Checkpoints
 - `results/scratch/12owob2t`: Model trained on prefix Expr. The SAEs are:
-    - 0-215: $\alpha$-regularized sweep. Best one 206.
-    - 216-395: $k$-regularized sweep. Best one 329.
+    - 0-215: $\alpha$-regularized sweep for `wte`. Best one 206.
+    - 216-395: $k$-regularized sweep for `wte`. Best one 329.
+    - 396-443: $\alpha$-regularized sweep for `res0`. Best one 427.
+    - 444-447: The best two models of the two `wte` sweeps (206, 111, 113, 146 respectively), trained at max 5k iters with val_patience 5.
+    - 448-487: $k$-regularized sweep for `res0`. Best one 454.
+    - 488-489: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with val_patience 5.
+    - 490-491: The best model of the two `wte` sweeps (206, 113 respectively), trained at max 5k iters with patience 5.
+    - 492-493: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with patience 5.
