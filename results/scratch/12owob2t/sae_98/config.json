@@ -1,0 +1,14 @@
+{
+    "model_dir": "results/scratch/12owob2t",
+    "ckpt": "latest_ckpt.pt",
+    "layer_name": "wte",
+    "batch_size": 128,
+    "exp_factor": 1,
+    "alpha": 0.1,
+    "k": -1,
+    "lr": 1e-05,
+    "train_iters": 1000,
+    "val_iters": 10,
+    "val_interval": 50,
+    "patience": 3
+}
