@@ -32,21 +32,14 @@ dataloader = get_dataloader(
     )
 
 # Load SAE
-layer_name = 'res0'
-data = SAEData(model_dir=path, ckpt='latest_ckpt.pt', layer_name=layer_name, device='cuda')
-dl = DataLoader(data, batch_size=10, shuffle=False, collate_fn=data.collate_fn)
-match layer_name:
-    case "wte":   module = model.transformer.wte
-    case "wpe":   module = model.transformer.wpe
-    case "attn0": module = model.transformer.h[0].attn
-    case "mlp0":  module = model.transformer.h[0].mlp
-    case "res0":  module = model.transformer.h[0]
-    case "attn1": module = model.transformer.h[1].attn
-    case "mlp1":  module = model.transformer.h[1].mlp
-    case "res1":  module = model.transformer.h[1]
-    case "ln_f":  module = model.transformer.ln_f
+layer_name = 'wte'
+
+def get_config(idx):
+    return json.load(open(os.path.join(path, F'sae_{idx}/config.json')))
 
 def get_sae(idx):
+    config = get_config(idx)
+    data = SAEData(model_dir=path, ckpt='latest_ckpt.pt', layer_name=config['layer_name'], device='cuda')
     embedding_size = data[0][0].size(-1)
     args = json.load(open(os.path.join(path, f'sae_{idx}/config.json')))
     sae = SAE(embedding_size, args['exp_factor'] * embedding_size, k=-1 if args['alpha'] else args['k']).to('cuda')
@@ -55,25 +48,44 @@ def get_sae(idx):
     sae.eval()
     return sae
 
-def get_config(idx):
-    return json.load(open(os.path.join(path, F'sae_{idx}/config.json')))
-
 # Evaluate intervened accuracy
 validities = []
 stds = []
-for i in tqdm(range(396, 415)):
+for i in tqdm(range(494)):
     sae = get_sae(i)
+    config = get_config(i)
+
     def hook(module, input, output):
         return sae(output)[1]
+
+    if config['layer_name'] == 'wte':
+        module = model.transformer.wte
+    elif config['layer_name'] == "wpe":
+        module = model.transformer.wpe
+    elif config['layer_name'] == "attn0":
+        module = model.transformer.h[0].attn
+    elif config['layer_name'] == "mlp0":
+        module = model.transformer.h[0].mlp
+    elif config['layer_name'] == "res0":
+        module = model.transformer.h[0]
+    elif config['layer_name'] == "attn1":
+        module = model.transformer.h[1].attn
+    elif config['layer_name'] == "mlp1":
+        module = model.transformer.h[1].mlp
+    elif config['layer_name'] == "res1":
+        module = model.transformer.h[1]
+    elif config['layer_name'] == "ln_f":
+        module = model.transformer.ln_f
     handle = module.register_forward_hook(hook)
 
     current = []
     for _ in range(5):
-        results_after = grammar_evals(cfg, model, template=dataloader.dataset.template, grammar=dataloader.dataset.PCFG, device='cpu')
+        results_after = grammar_evals(cfg, model, template=dataloader.dataset.template, grammar=dataloader.dataset.PCFG, device='cuda')
         current.append(results_after['validity'])
-    validities.append(torch.tensor(current).mean().item())
-    stds.append(torch.tensor(current).std().item())
+
+    validity = torch.tensor(current).mean().item()
+    std = torch.tensor(current).std().item()
+    with open('validities.txt', 'a') as f:
+        f.write(f"{i} {validity} +- {std}\n")
     handle.remove()
 
-for i, (v, s) in enumerate(zip(validities, stds)):
-    print(f'{i + 396} {v:.3f} ± {s:.3f}')
