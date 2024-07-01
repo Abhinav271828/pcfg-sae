@@ -41,8 +41,9 @@ def train(args):
             activation = activation.to(device)
             optimizer.zero_grad()
             latent, recon = model(activation)
-            loss = criterion(recon, activation)
-            loss += args.alpha * torch.norm(latent, p=1) if args.alpha else 0
+            recon_loss = criterion(recon, activation)
+            reg_loss = args.alpha * torch.norm(latent, p=1) if args.alpha else 0
+            loss = recon_loss + reg_loss
             loss.backward()
             optimizer.step()
             train_loss = loss.item()
@@ -65,10 +66,14 @@ def train(args):
                         val_loss += loss.item()
                         val_it += 1
                 model.train()
-                wandb.log({'train_loss': train_loss,
+                wandb.log({'recon_loss': recon_loss.item(),
+                           'reg_loss'  : reg_loss.item(),
+                           'train_loss': train_loss,
                            'val_loss'  : val_loss   / args.val_iters})
             else:
-                wandb.log({'train_loss': train_loss})
+                wandb.log({'recon_loss': recon_loss.item(),
+                           'reg_loss'  : reg_loss.item(),
+                           'train_loss': train_loss})
             train_it += 1
 
     i = 0
