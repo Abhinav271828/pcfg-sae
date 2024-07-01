@@ -42,7 +42,7 @@ def get_sae(idx):
     data = SAEData(model_dir=path, ckpt='latest_ckpt.pt', layer_name=config['layer_name'], device='cuda')
     embedding_size = data[0][0].size(-1)
     args = json.load(open(os.path.join(path, f'sae_{idx}/config.json')))
-    sae = SAE(embedding_size, args['exp_factor'] * embedding_size, k=-1 if args['alpha'] else args['k']).to('cuda')
+    sae = SAE(embedding_size, args['exp_factor'] * embedding_size, k=args['k'] if 'k' in args else None, sparsemax=args['sparsemax'] if 'sparsemax' in args else False).to('cuda')
     state_dict = torch.load(os.path.join(path, f'sae_{idx}/model.pth'), map_location='cpu')
     sae.load_state_dict(state_dict)
     sae.eval()
