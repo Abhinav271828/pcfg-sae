@@ -9,7 +9,7 @@ parser.add_argument("--ckpt",         help="Checkpoint file",
 parser.add_argument("--layer_name",   help="Layer name",
                     type=str,         default=None,  required=True)
 parser.add_argument("--batch_size",   help="Batch size",
-                    type=int,         default=4,     required=False)
+                    type=int,         default=128,   required=False)
 parser.add_argument("--exp_factor",   help="Expansion factor",
                     type=int,         default=1,     required=False)
 parser.add_argument("--alpha",        help="L1 regularization coefficient",
@@ -30,7 +30,7 @@ parser.add_argument("--patience",     help="Patience",
                     type=int,         default=3,     required=False)
 
 args = parser.parse_args()
-if sum([args.alpha is not None, args.k is not None, args.sparsemax]) == 1:
+if sum([args.alpha is not None, args.k is not None, args.sparsemax]) != 1:
     raise ValueError("At most one of alpha, k, and sparsemax can be specified.")
 
 train(args)
