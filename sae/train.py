@@ -16,7 +16,7 @@ def train(args):
     val_dl = DataLoader(val_data, batch_size=args.batch_size, shuffle=False, collate_fn=val_data.collate_fn)
 
     embedding_size = train_data[0][0].size(-1)
-    model = SAE(embedding_size, args.exp_factor * embedding_size, k=-1 if args.alpha else args.k).to(device)
+    model = SAE(embedding_size, args.exp_factor * embedding_size, k=args.k, sparsemax=args.sparsemax).to(device)
     model.train()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
