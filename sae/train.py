@@ -67,12 +67,12 @@ def train(args):
                         val_it += 1
                 model.train()
                 wandb.log({'recon_loss': recon_loss.item(),
-                           'reg_loss'  : reg_loss.item(),
+                           'reg_loss'  : reg_loss.item() if args.alpha else 0,
                            'train_loss': train_loss,
                            'val_loss'  : val_loss   / args.val_iters})
             else:
                 wandb.log({'recon_loss': recon_loss.item(),
-                           'reg_loss'  : reg_loss.item(),
+                           'reg_loss'  : reg_loss.item() if args.alpha else 0,
                            'train_loss': train_loss})
             train_it += 1
 
