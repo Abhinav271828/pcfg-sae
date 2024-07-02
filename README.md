@@ -51,3 +51,8 @@
     - 488-489: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with val_patience 5.
     - 490-491: The best model of the two `wte` sweeps (206, 113 respectively), trained at max 5k iters with patience 5. Useless.
     - 492-493: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with patience 5. Useless.
+- `results/scratch/3v4gwdfk`: Model trained on English. The SAEs are:
+    - 0-19: $k$-regularized sweep for `res0`. Useless.
+    - 20-43: $\alpha$-regularized sweep for `res0`. Useless.
+    - 44-63: $k$-regularized sweep for `res0`, trained with val_patience 3 (pending).
+    - 64-87: $\alpha$-regularized sweep for `res0`, trained with val_patience 3 (pending).
