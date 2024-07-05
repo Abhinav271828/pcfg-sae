@@ -47,11 +47,6 @@ def train(args):
             loss.backward()
             optimizer.step()
             train_loss = loss.item()
-            if loss > prev_loss: loss_increasing += 1
-            else: loss_increasing = 0
-
-            if loss_increasing == args.patience: break
-            prev_loss = loss
 
             if train_it % args.val_interval == 0:
                 model.eval()
@@ -70,6 +65,11 @@ def train(args):
                            'reg_loss'  : reg_loss.item() if args.alpha else 0,
                            'train_loss': train_loss,
                            'val_loss'  : val_loss   / args.val_iters})
+                if val_loss > prev_loss: loss_increasing += 1
+                else: loss_increasing = 0
+
+                if loss_increasing == args.patience: break
+                prev_loss = val_loss
             else:
                 wandb.log({'recon_loss': recon_loss.item(),
                            'reg_loss'  : reg_loss.item() if args.alpha else 0,
