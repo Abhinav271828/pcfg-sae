@@ -386,8 +386,14 @@ class PCFG:
         vocab = {}
         vocab_size = 0
         if self.language == 'english':
-            n_symbol_to_tokens = [self.n_nouns, self.n_verbs, self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
-            token_prefix = ['noun', 'verb', 'adj', 'pro', 'adv', 'conj']
+            n_symbol_to_tokens = [self.n_nouns, self.n_verbs // 2,  (self.n_verbs - self.n_verbs // 2), self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
+            token_prefix = ['noun'] + (['tverb', 'iverb'] if self.transitivity else ['verb', 'verb']) + ['adj', 'pro', 'adv', 'conj']
+            if self.n_prepositions > 0:
+                n_symbol_to_tokens += [self.n_prepositions]
+                token_prefix += ['prep']
+            if self.relative_clauses:
+                n_symbol_to_tokens += [2, 2]
+                token_prefix += ['relp', 'rela']
             for prefix, n_symbol_to_token in zip(token_prefix, n_symbol_to_tokens):
                 for i in range(n_symbol_to_token):
                     vocab[f'{prefix}{i}'] = vocab_size

@@ -13,7 +13,12 @@ def get_dataloader(
                         'n_adjectives': 10,
                         'n_pronouns': 10,
                         'n_adverbs': 10,
-                        'n_conjunctions': 2}, # config for PCFG. see below for other languages.
+                        'n_conjunctions': 2,
+                        'p_conjunctions': 0.15,
+                        'n_prepositions': 0,
+                        'relative_clauses': False,
+                        'transitive_verbs': False
+                        }, # config for PCFG. see below for other languages.
         alpha: float = 1e5,
         prior_type: str = 'dirichlet',
         num_iters: int=1e6,
@@ -34,6 +39,10 @@ def get_dataloader(
             n_pronouns: The number of pronouns in the vocabulary.
             n_adverbs: The number of adverbs in the vocabulary.
             n_conjunctions: The number of conjunctions in the vocabulary.
+            p_conjunctions: The probability of generating a conjunction.
+            n_prepositions: The number of prepositions in the vocabulary.
+            relative_clauses: Whether to generate relative clauses (as both adjectives and adverbs).
+            transitivity: Whether to distinguish transitive and intransitive verbs.
         * For 'expr':
             n_digits: The number of digits in the vocabulary.
             n_ops: The number of operations in the vocabulary.
@@ -85,7 +94,11 @@ class PCFGDataset():
                         'n_adjectives': 10,
                         'n_pronouns': 10,
                         'n_adverbs': 10,
-                        'n_conjunctions': 2}, # config for PCFG. see below for other languages.
+                        'n_conjunctions': 2,
+                        'p_conjunctions': 0.15,
+                        'n_prepositions': 0,
+                        'relative_clauses': False,
+                        'transitive_verbs': False}, # config for PCFG. see below for other languages.
         alpha: float = 1e5,
         prior_type: str = 'dirichlet',
         num_iters: int=1e6,
@@ -104,6 +117,10 @@ class PCFGDataset():
                 n_pronouns: The number of pronouns in the vocabulary.
                 n_adverbs: The number of adverbs in the vocabulary.
                 n_conjunctions: The number of conjunctions in the vocabulary.
+                p_conjunctions: The probability of generating a conjunction.
+                n_prepositions: The number of prepositions in the vocabulary.
+                relative_clauses: Whether to generate relative clauses (as both adjectives and adverbs).
+                transitivity: Whether to distinguish transitive and intransitive verbs.
             * For 'expr':
                 n_digits: The number of digits in the vocabulary.
                 n_ops: The number of operations in the vocabulary.
