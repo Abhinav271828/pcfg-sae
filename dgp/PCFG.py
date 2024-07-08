@@ -271,7 +271,7 @@ class PCFG:
         ## Define lexical rules
         symbol_types = ['N', 'TV', 'IV', 'Adj', 'Pro', 'Adv', 'Conj']
         n_symbol_to_tokens = [n_nouns, n_verbs // 2, (n_verbs - n_verbs // 2), n_adjectives, n_pronouns, n_adverbs, n_conjunctions]
-        token_prefix = ['noun'] + (('tverb', 'iverb') if transitivity else ('verb', 'verb')) + ['adj', 'pro', 'adv', 'conj']
+        token_prefix = ['noun'] + (['tverb', 'iverb'] if transitivity else ['verb', 'verb']) + ['adj', 'pro', 'adv', 'conj']
         if n_prepositions > 0:
             symbol_types += ['P']
             n_symbol_to_tokens += [n_prepositions]
