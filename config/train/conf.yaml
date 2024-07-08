@@ -15,6 +15,10 @@ data:
     # n_pronouns: 10
     # n_adverbs: 10
     # n_conjunctions: 10
+    # p_conjunctions: 0.15
+    # n_prepositions: 0
+    # relative_clauses: False
+    # transitivity: False
     n_digits: 10 # for expr
     n_ops: 3
     postfix: false

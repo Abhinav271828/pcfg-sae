@@ -88,7 +88,11 @@ class PCFG:
                              'n_adjectives': 10,
                              'n_pronouns': 10,
                              'n_adverbs': 10,
-                             'n_conjunctions': 2}, # config depends on the language; see below
+                             'n_conjunctions': 2,
+                             'p_conjunctions': 0.15,
+                             'n_prepositions': 0,
+                             'relative_clauses': False,
+                             'transitive_verbs': False}, # config depends on the language; see below
             alpha: float = 1e5,
             prior_type: str = 'dirichlet',
             tasks: dict = None,
@@ -106,6 +110,10 @@ class PCFG:
                 n_pronouns: The number of pronouns in the vocabulary.
                 n_adverbs: The number of adverbs in the vocabulary.
                 n_conjunctions: The number of conjunctions in the vocabulary.
+                p_conjunctions: The probability of generating a conjunction.
+                n_prepositions: The number of prepositions in the vocabulary.
+                relative_clauses: Whether to generate relative clauses (as both adjectives and adverbs).
+                transitivity: Whether to distinguish transitive and intransitive verbs.
             * For 'expr':
                 n_digits: The number of digits in the vocabulary.
                 n_ops: The number of operations in the vocabulary.
@@ -141,6 +149,10 @@ class PCFG:
             self.n_pronouns = config['n_pronouns']
             self.n_adverbs = config['n_adverbs']
             self.n_conjunctions = config['n_conjunctions']
+            self.p_conjunctions = config['p_conjunctions']
+            self.n_prepositions = config['n_prepositions']
+            self.relative_clauses = config['relative_clauses']
+            self.transitivity = config['transitivity']
             self.grammar = self.create_grammar_english(
                 n_nouns=self.n_nouns,
                 n_verbs=self.n_verbs,
@@ -148,6 +160,10 @@ class PCFG:
                 n_pronouns=self.n_pronouns,
                 n_adverbs=self.n_adverbs,
                 n_conjunctions=self.n_conjunctions,
+                p_conjunctions=self.p_conjunctions,
+                n_prepositions=self.n_prepositions,
+                relative_clauses=self.relative_clauses,
+                transitivity=self.transitivity,
                 )
 
         elif language == 'expr':
@@ -187,6 +203,10 @@ class PCFG:
             n_pronouns: int,
             n_adverbs: int,
             n_conjunctions: int,
+            p_conjunctions: float,
+            n_prepositions: int,
+            relative_clauses: bool,
+            transitivity: bool,
             ):
         """Define the PCFG grammar.
 
@@ -197,6 +217,10 @@ class PCFG:
             n_pronouns: The number of pronouns in the vocabulary.
             n_adverbs: The number of adverbs in the vocabulary.
             n_conjunctions: The number of conjunctions in the vocabulary.
+            p_conjunctions: The probability of generating a conjunction.
+            n_prepositions: The number of prepositions in the vocabulary.
+            relative_clauses: Whether to generate relative clauses (as both adjectives and adverbs).
+            transitivity: Whether to distinguish transitive and intransitive verbs.
 
         Returns:
             The PCFG grammar.
@@ -204,17 +228,58 @@ class PCFG:
 
         # Define production rules
         self.production_rules = """
-                S -> NP VP [1.0] | VP NP [0.0] 
-                NP -> Adj N [0.5] | NP Conj NP [0.25] | Pro [0.25]
-                VP -> V [0.25] | V NP [0.35] | VP Adv [0.25] | VP Conj VP [0.15] 
+                S -> NP VP [1.0]
                 """
+
+        # Define expansions of required non-terminals
+        np_expansions = {'Pro': 0.2,   'N': 0.2,  'NP Conj NP': p_conjunctions, 'Adj NP': 0, 'NP AdjRel': 0, 'NP PP': 0}
+        vp_expansions = {'TV NP': 0.2, 'IV': 0.2, 'VP Conj VP': p_conjunctions, 'VP Adv': 0, 'VP AdvRel': 0, 'VP PP': 0}
+        expansions = {'NP': np_expansions, 'VP': vp_expansions}
+
+        if relative_clauses:
+            adjrel_expansions = {'RP TV NP': 0.33, 'RP IV': 0.33, 'RP NP TV': 0.34}
+            advrel_expansions = {'RA S': 1}
+            expansions += {'AdjRel': adjrel_expansions, 'AdvRel': advrel_expansions}
+        if n_prepositions > 0:
+            pp_expansions = {'P NP': 1}
+            expansions += {'PP': pp_expansions}
         
+        n = 1 + sum([relative_clauses, n_prepositions > 0]) # 1 for Adj NP or VP Adv
+        p = eval(f'{(0.6 - p_conjunctions)/n:0.2f}') # 0.4 for Pro, N or TV, IV
+        # Assign probabilities to NP expansions
+        np_expansions['Adj NP'] = p
+        if relative_clauses: np_expansions['NP AdjRel'] = p
+        if n_prepositions > 0: np_expansions['NP PP'] = p
+        if sum(np_expansions.values()) < 1: np_expansions['N'] += 1 - sum(np_expansions.values())
+
+        # Assign probabilities to VP expansions
+        vp_expansions['VP Adv'] = p
+        if relative_clauses: vp_expansions['VP AdvRel'] = p
+        if n_prepositions > 0: vp_expansions['VP PP'] = p
+        if sum(vp_expansions.values()) < 1: vp_expansions['IV'] += 1 - sum(vp_expansions.values())
+
+        # Format the expansions
+        for nonterminal, exps in expansions.items():
+            rhs_symbol = ""
+            for rhs, prob in exps.items():
+                rhs_symbol += f"{rhs} [{prob}] | "
+            rhs_symbol = rhs_symbol[:-3]
+            self.production_rules += f"{nonterminal} -> {rhs_symbol} \n"
+
         self.lexical_symbolic_rules = ""
 
         ## Define lexical rules
-        symbol_types = ['N', 'V', 'Adj', 'Pro', 'Adv', 'Conj']
-        n_symbol_to_tokens = [n_nouns, n_verbs, n_adjectives, n_pronouns, n_adverbs, n_conjunctions]
-        token_prefix = ['noun', 'verb', 'adj', 'pro', 'adv', 'conj']
+        symbol_types = ['N', 'TV', 'IV', 'Adj', 'Pro', 'Adv', 'Conj']
+        n_symbol_to_tokens = [n_nouns, n_verbs // 2, (n_verbs - n_verbs // 2), n_adjectives, n_pronouns, n_adverbs, n_conjunctions]
+        token_prefix = ['noun'] + (('tverb', 'iverb') if transitivity else ('verb', 'verb')) + ['adj', 'pro', 'adv', 'conj']
+        if n_prepositions > 0:
+            symbol_types += ['P']
+            n_symbol_to_tokens += [n_prepositions]
+            token_prefix += ['prep']
+        if relative_clauses:
+            symbol_types += ['RP', 'RA']
+            n_symbol_to_tokens += [2, 2]
+            token_prefix += ['relp', 'rela']
 
         for symbol_type, n_symbol_to_token, prefix in zip(symbol_types, n_symbol_to_tokens, token_prefix):
             prior_over_symbol = define_prior(n_symbol_to_token, alpha=self.alpha, prior_type=self.prior_type)
