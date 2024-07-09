@@ -232,12 +232,14 @@ class PCFG:
                 """
 
         # Define expansions of required non-terminals
-        np_expansions = {'Pro': 0.2,   'N': 0.2,  'NP Conj NP': p_conjunctions, 'Adj NP': 0, 'NP AdjRel': 0, 'NP PP': 0}
-        vp_expansions = {'TV NP': 0.2, 'IV': 0.2, 'VP Conj VP': p_conjunctions, 'VP Adv': 0, 'VP AdvRel': 0, 'VP PP': 0}
+        np_expansions = {'Pro': 0.20,   'N': 0.20,  'NP Conj NP': p_conjunctions, 'Adj NP': 0, 'NP AdjRel': 0, 'NP PP': 0}
+        vp_expansions = {'VP Conj VP': p_conjunctions, 'VP Adv': 0, 'VP AdvRel': 0, 'VP PP': 0}
+        vp_expansions.update({'TV NP': 0.20, 'IV': 0.20} if transitivity else {'V NP': 0.20,  'V': 0.20})
         expansions = {'NP': np_expansions, 'VP': vp_expansions}
 
         if relative_clauses:
-            adjrel_expansions = {'RP TV NP': 0.33, 'RP IV': 0.33, 'RP NP TV': 0.34}
+            adjrel_expansions = {'RP TV NP': 0.33, 'RP IV': 0.33, 'RP NP TV': 0.34} if transitivity else \
+                                {'RP V NP': 0.33,  'RP V': 0.33,  'RP NP V': 0.34}
             advrel_expansions = {'RA S': 1}
             expansions.update({'AdjRel': adjrel_expansions, 'AdvRel': advrel_expansions})
         if n_prepositions > 0:
@@ -256,7 +258,10 @@ class PCFG:
         vp_expansions['VP Adv'] = p
         if relative_clauses: vp_expansions['VP AdvRel'] = p
         if n_prepositions > 0: vp_expansions['VP PP'] = p
-        if sum(vp_expansions.values()) < 1: vp_expansions['IV'] += 1 - sum(vp_expansions.values())
+        remaining_p = 1 - sum(vp_expansions.values())
+        if remaining_p > 0:
+            if transitivity: vp_expansions['IV'] += remaining_p
+            else: vp_expansions['V'] += remaining_p
 
         # Format the expansions
         for nonterminal, exps in expansions.items():
@@ -268,10 +273,10 @@ class PCFG:
 
         self.lexical_symbolic_rules = ""
 
-        ## Define lexical rules
-        symbol_types = ['N', 'TV', 'IV', 'Adj', 'Pro', 'Adv', 'Conj']
-        n_symbol_to_tokens = [n_nouns, n_verbs // 2, (n_verbs - n_verbs // 2), n_adjectives, n_pronouns, n_adverbs, n_conjunctions]
-        token_prefix = ['noun'] + (['tverb', 'iverb'] if transitivity else ['verb', 'verb']) + ['adj', 'pro', 'adv', 'conj']
+        ## Define lexical rules)
+        symbol_types = ['N'] + (['TV', 'IV'] if transitivity else ['V']) + ['Adj', 'Pro', 'Adv', 'Conj']
+        n_symbol_to_tokens = [n_nouns] + ([n_verbs // 2,  (n_verbs - n_verbs // 2)] if self.transitivity else [n_verbs]) + [n_adjectives, n_pronouns, n_adverbs, n_conjunctions]
+        token_prefix = ['noun'] + (['tverb', 'iverb'] if transitivity else ['verb']) + ['adj', 'pro', 'adv', 'conj']
         if n_prepositions > 0:
             symbol_types += ['P']
             n_symbol_to_tokens += [n_prepositions]
@@ -288,6 +293,8 @@ class PCFG:
                 rhs_symbol += f"'{prefix}{i}' [{prior_over_symbol[i]}] | "
             rhs_symbol = rhs_symbol[:-3]
             self.lexical_symbolic_rules += f"{symbol_type} -> {rhs_symbol} \n"
+        
+        print(self.production_rules + self.lexical_symbolic_rules)
 
         # Create the grammar
         return ProbabilisticGenerator.fromstring(self.production_rules + self.lexical_symbolic_rules)
@@ -386,8 +393,8 @@ class PCFG:
         vocab = {}
         vocab_size = 0
         if self.language == 'english':
-            n_symbol_to_tokens = [self.n_nouns, self.n_verbs // 2,  (self.n_verbs - self.n_verbs // 2), self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
-            token_prefix = ['noun'] + (['tverb', 'iverb'] if self.transitivity else ['verb', 'verb']) + ['adj', 'pro', 'adv', 'conj']
+            n_symbol_to_tokens = [self.n_nouns] + ([self.n_verbs // 2,  (self.n_verbs - self.n_verbs // 2)] if self.transitivity else [self.n_verbs]) + [self.n_adjectives, self.n_pronouns, self.n_adverbs, self.n_conjunctions]
+            token_prefix = ['noun'] + (['tverb', 'iverb'] if self.transitivity else ['verb']) + ['adj', 'pro', 'adv', 'conj']
             if self.n_prepositions > 0:
                 n_symbol_to_tokens += [self.n_prepositions]
                 token_prefix += ['prep']
