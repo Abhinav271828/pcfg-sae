@@ -239,10 +239,10 @@ class PCFG:
         if relative_clauses:
             adjrel_expansions = {'RP TV NP': 0.33, 'RP IV': 0.33, 'RP NP TV': 0.34}
             advrel_expansions = {'RA S': 1}
-            expansions += {'AdjRel': adjrel_expansions, 'AdvRel': advrel_expansions}
+            expansions.update({'AdjRel': adjrel_expansions, 'AdvRel': advrel_expansions})
         if n_prepositions > 0:
             pp_expansions = {'P NP': 1}
-            expansions += {'PP': pp_expansions}
+            expansions.update({'PP': pp_expansions})
         
         n = 1 + sum([relative_clauses, n_prepositions > 0]) # 1 for Adj NP or VP Adv
         p = eval(f'{(0.6 - p_conjunctions)/n:0.2f}') # 0.4 for Pro, N or TV, IV
