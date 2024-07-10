@@ -294,8 +294,6 @@ class PCFG:
             rhs_symbol = rhs_symbol[:-3]
             self.lexical_symbolic_rules += f"{symbol_type} -> {rhs_symbol} \n"
         
-        print(self.production_rules + self.lexical_symbolic_rules)
-
         # Create the grammar
         return ProbabilisticGenerator.fromstring(self.production_rules + self.lexical_symbolic_rules)
 
