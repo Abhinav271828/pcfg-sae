@@ -8,9 +8,24 @@ from torch.utils.data import DataLoader
 import json
 from tqdm import tqdm
 from evals import grammar_evals
+import argparse
 
 # Load model and data
-path = 'results/scratch/12owob2t'
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_dir", help="Path to the model directory",
+                    type=str,      default=None,  required=True)
+parser.add_argument("--start",     help="Start index of SAEs",
+                    type=int,      default=None,  required=True)
+parser.add_argument("--end",       help="End index of SAEs + 1",
+                    type=int,      default=None,  required=True)
+
+args = parser.parse_args()
+path = args.model_dir
+start = args.start
+end = args.end
+
 state_dict = torch.load(os.path.join(path, 'latest_ckpt.pt'), map_location='cuda')
 cfg = state_dict['config']
 
@@ -32,8 +47,6 @@ dataloader = get_dataloader(
     )
 
 # Load SAE
-layer_name = 'wte'
-
 def get_config(idx):
     return json.load(open(os.path.join(path, F'sae_{idx}/config.json')))
 
@@ -51,7 +64,7 @@ def get_sae(idx):
 # Evaluate intervened accuracy
 validities = []
 stds = []
-for i in tqdm(range(494)):
+for i in tqdm(range(start, end)):
     sae = get_sae(i)
     config = get_config(i)
 
