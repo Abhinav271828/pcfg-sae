@@ -40,6 +40,8 @@ def train(args):
 
             activation = activation.to(device)
             optimizer.zero_grad()
+            norm = torch.norm(activation, p=2, dim=-1)
+            activation = activation / norm.unsqueeze(-1)
             latent, recon = model(activation)
             recon_loss = criterion(recon, activation)
             reg_loss = args.alpha * torch.norm(latent, p=1) if args.alpha else 0

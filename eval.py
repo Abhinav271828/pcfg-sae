@@ -31,7 +31,7 @@ cfg = state_dict['config']
 
 with open(os.path.join(path, 'grammar/PCFG.pkl'), 'rb') as f:
     pcfg = pkl.load(f)
-model = GPT(cfg.model, pcfg.vocab_size).to('cuda')
+model = GPT(cfg.model, pcfg.vocab_size).to('cpu')
 model.load_state_dict(state_dict['net'])
 model.eval()
 dataloader = get_dataloader(
@@ -52,10 +52,10 @@ def get_config(idx):
 
 def get_sae(idx):
     config = get_config(idx)
-    data = SAEData(model_dir=path, ckpt='latest_ckpt.pt', layer_name=config['layer_name'], device='cuda')
+    data = SAEData(model_dir=path, ckpt='latest_ckpt.pt', layer_name=config['layer_name'], device='cpu')
     embedding_size = data[0][0].size(-1)
     args = json.load(open(os.path.join(path, f'sae_{idx}/config.json')))
-    sae = SAE(embedding_size, args['exp_factor'] * embedding_size, k=args['k'] if 'k' in args else None, sparsemax=args['sparsemax'] if 'sparsemax' in args else False).to('cuda')
+    sae = SAE(embedding_size, args['exp_factor'] * embedding_size, k=args['k'] if 'k' in args else None, sparsemax=args['sparsemax'] if 'sparsemax' in args else False).to('cpu')
     state_dict = torch.load(os.path.join(path, f'sae_{idx}/model.pth'), map_location='cpu')
     sae.load_state_dict(state_dict)
     sae.eval()
@@ -69,7 +69,8 @@ for i in tqdm(range(start, end)):
     config = get_config(i)
 
     def hook(module, input, output):
-        return sae(output)[1]
+        norm = torch.norm(output, p=2, dim=-1)
+        return sae(output / norm.unsqueeze(-1))[1] * norm.unsqueeze(-1)
 
     if config['layer_name'] == 'wte':
         module = model.transformer.wte
@@ -93,7 +94,7 @@ for i in tqdm(range(start, end)):
 
     current = []
     for _ in range(5):
-        results_after = grammar_evals(cfg, model, template=dataloader.dataset.template, grammar=dataloader.dataset.PCFG, device='cuda')
+        results_after = grammar_evals(cfg, model, template=dataloader.dataset.template, grammar=dataloader.dataset.PCFG, device='cpu')
         current.append(results_after['validity'])
 
     validity = torch.tensor(current).mean().item()
