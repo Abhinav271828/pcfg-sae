@@ -51,8 +51,24 @@
     - 488-489: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with val_patience 5.
     - 490-491: The best model of the two `wte` sweeps (206, 113 respectively), trained at max 5k iters with patience 5. Useless.
     - 492-493: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with patience 5. Useless.
-- `results/scratch/3v4gwdfk`: Model trained on English. The SAEs are:
+    - 494-517: Sparsemax (old) sweep for `wte` and `res0` (over lr and exp_factor). Useless.
+    - 518-529: Sparsemax (new, kds false) sweep for `res0` (over lr and exp_factor). Best 519 (65%).
+    - 530-5
+- `results/scratch/3v4gwdfk`: Model trained on English (no prepositions, no relative clauses, p_conj 0.25 for nouns, 0.15 for verbs). The SAEs are:
     - 0-19: $k$-regularized sweep for `res0`. Useless.
     - 20-43: $\alpha$-regularized sweep for `res0`. Useless.
-    - 44-63: $k$-regularized sweep for `res0`, trained with val_patience 3 (pending).
-    - 64-87: $\alpha$-regularized sweep for `res0`, trained with val_patience 3 (pending).
+    - 44-63: $k$-regularized sweep for `res0`, trained with val_patience 3. Best 63, 61.
+    - 64-87: $\alpha$-regularized sweep for `res0`, trained with val_patience 3. Best 67.
+- `results/scratch/cpyib3ss`: Model trained on Dyck. The SAEs are:
+    - 0-23: $\alpha$-regularized sweep for `res0`, with val_patience 3.
+    - 24-43: $k$-regularized sweep for `res0`, with val_patience 3.
+    - 44-63: $k$-regularized sweep for `res0`, with val_patience 3 and max 5k iters. Best 63.
+    - 64-87: $\alpha$-regularized sweep for `res0`, with val_patience 3 and max 5k iters.
+- `results/scratch/vx8j11gp`: Model trained on English with transitivity and no other variations.
+    - 0-47: $\alpha$-regularized sweep (twice).
+    - 48-67: $k$-regularized sweep.
+- `results/scratch/9rts35mx`: Model trained on English with adverbial and adjectival relative clauses.
+    - 0-23: $\alpha$-regularized sweep.
+    - 24-43: $k$-regularized sweep.
+- `results/scratch/bcb19qnd`: Model trained on English with adverbial and adjectival prepositional phrases (3 prepositions).
+- `results/scratch/ktm5d2gn`: Model trained on English with the probability of conjunctions in NPs and VPs set to 0.3.
