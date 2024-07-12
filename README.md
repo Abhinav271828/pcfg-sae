@@ -53,7 +53,7 @@
     - 492-493: The best model of the two `res0` sweeps (427, 454 respectively), trained at max 5k iters with patience 5. Useless.
     - 494-517: Sparsemax (old) sweep for `wte` and `res0` (over lr and exp_factor). Useless.
     - 518-529: Sparsemax (new, kds false) sweep for `res0` (over lr and exp_factor). Best 519 (65%).
-    - 530-5
+    - 530-541: Sparsemax (new, kds true) sweep for `res0` (over lr and exp_factor). Best 541 (35%).
 - `results/scratch/3v4gwdfk`: Model trained on English (no prepositions, no relative clauses, p_conj 0.25 for nouns, 0.15 for verbs). The SAEs are:
     - 0-19: $k$-regularized sweep for `res0`. Useless.
     - 20-43: $\alpha$-regularized sweep for `res0`. Useless.
@@ -65,8 +65,8 @@
     - 44-63: $k$-regularized sweep for `res0`, with val_patience 3 and max 5k iters. Best 63.
     - 64-87: $\alpha$-regularized sweep for `res0`, with val_patience 3 and max 5k iters.
 - `results/scratch/vx8j11gp`: Model trained on English with transitivity and no other variations.
-    - 0-47: $\alpha$-regularized sweep (twice).
-    - 48-67: $k$-regularized sweep.
+    - 0-47: $\alpha$-regularized sweep (twice). Best 47.
+    - 48-67: $k$-regularized sweep. Best 62.
 - `results/scratch/9rts35mx`: Model trained on English with adverbial and adjectival relative clauses.
     - 0-23: $\alpha$-regularized sweep.
     - 24-43: $k$-regularized sweep.
