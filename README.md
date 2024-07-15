@@ -68,7 +68,8 @@
     - 0-47: $\alpha$-regularized sweep (twice). Best 47.
     - 48-67: $k$-regularized sweep. Best 62.
 - `results/scratch/9rts35mx`: Model trained on English with adverbial and adjectival relative clauses.
-    - 0-23: $\alpha$-regularized sweep.
-    - 24-43: $k$-regularized sweep.
+    - 0-23: $\alpha$-regularized sweep. Useless.
+    - 24-43: $k$-regularized sweep. Best 43.
 - `results/scratch/bcb19qnd`: Model trained on English with adverbial and adjectival prepositional phrases (3 prepositions).
+    - 0-23: $\alpha$-regularized sweep.
 - `results/scratch/ktm5d2gn`: Model trained on English with the probability of conjunctions in NPs and VPs set to 0.3.
