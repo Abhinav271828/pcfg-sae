@@ -18,4 +18,6 @@ class SAE(nn.Module):
             latent = torch.zeros_like(latent)
             latent.scatter_(-1, indices, values)
         recon = self.decoder(latent)
+        norm = torch.norm(recon, p=2, dim=-1)
+        recon = recon / norm.unsqueeze(-1)
         return latent, recon
