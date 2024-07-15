@@ -42,5 +42,4 @@
 - Trained SAEs are saved in a subdirectory `sae_{i}` (depending on how many SAEs have been saved previously for the same model), which contains a `config.json` with the above arguments and a `model.pth` file.
 
 # Model Checkpoints
-- `results/scratch/12owob2t`: Model trained on prefix Expr. The SAEs are:
-    - 0-23: $\alpha$-regularized sweep with normalization. The activations are normalized before passing through the SAE and, in the case of interventions, denormalized outside (not for loss computation).
+- `results/scratch/dxz0v2xw`: Model trained on prefix Expr with weight decay $10^{-1}$ instead of the default $10^{-4}$.
