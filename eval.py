@@ -69,8 +69,7 @@ for i in tqdm(range(start, end)):
     config = get_config(i)
 
     def hook(module, input, output):
-        norm = torch.norm(output, p=2, dim=-1)
-        return sae(output / norm.unsqueeze(-1))[1] * norm.unsqueeze(-1)
+        return sae(output)[1]
 
     if config['layer_name'] == 'wte':
         module = model.transformer.wte
