@@ -43,4 +43,4 @@
 
 # Model Checkpoints
 - `results/scratch/12owob2t`: Model trained on prefix Expr. The SAEs are:
-    - 0-23: $\alpha$-regularized sweep with normalization. The activations are normalized before passing through the SAE and, in the case of interventions, denormalized outside (not for loss computation).
+    - 0-23: $\alpha$-regularized sweep with normalization. The activations are normalized before passing through the SAE and, in the case of interventions, denormalized outside (not for loss computation). Terrible.
