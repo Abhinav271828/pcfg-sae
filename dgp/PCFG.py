@@ -149,10 +149,10 @@ class PCFG:
             self.n_pronouns = config['n_pronouns']
             self.n_adverbs = config['n_adverbs']
             self.n_conjunctions = config['n_conjunctions']
-            self.p_conjunctions = config['p_conjunctions']
-            self.n_prepositions = config['n_prepositions']
-            self.relative_clauses = config['relative_clauses']
-            self.transitivity = config['transitivity']
+            self.p_conjunctions = config['p_conjunctions'] if 'p_conjunctions' in config else 0.15
+            self.n_prepositions = config['n_prepositions'] if 'n_prepositions' in config else 0
+            self.relative_clauses = config['relative_clauses'] if 'relative_clauses' in config else False
+            self.transitivity = config['transitivity'] if 'transitivity' in config else False
             self.grammar = self.create_grammar_english(
                 n_nouns=self.n_nouns,
                 n_verbs=self.n_verbs,
@@ -232,7 +232,7 @@ class PCFG:
                 """
 
         # Define expansions of required non-terminals
-        np_expansions = {'Pro': 0.20,   'N': 0.20,  'NP Conj NP': p_conjunctions, 'Adj NP': 0, 'NP AdjRel': 0, 'NP PP': 0}
+        np_expansions = {'Pro': 0.20,   'N': 0.20,  'NP Conj NP': p_conjunctions, 'Adj N': 0, 'NP AdjRel': 0, 'NP PP': 0}
         vp_expansions = {'VP Conj VP': p_conjunctions, 'VP Adv': 0, 'VP AdvRel': 0, 'VP PP': 0}
         vp_expansions.update({'TV NP': 0.20, 'IV': 0.20} if transitivity else {'V NP': 0.20,  'V': 0.20})
         expansions = {'NP': np_expansions, 'VP': vp_expansions}
@@ -246,10 +246,10 @@ class PCFG:
             pp_expansions = {'P NP': 1}
             expansions.update({'PP': pp_expansions})
         
-        n = 1 + sum([relative_clauses, n_prepositions > 0]) # 1 for Adj NP or VP Adv
+        n = 1 + sum([relative_clauses, n_prepositions > 0]) # 1 for Adj N or VP Adv
         p = eval(f'{(0.6 - p_conjunctions)/n:0.2f}') # 0.4 for Pro, N or TV, IV
         # Assign probabilities to NP expansions
-        np_expansions['Adj NP'] = p
+        np_expansions['Adj N'] = p
         if relative_clauses: np_expansions['NP AdjRel'] = p
         if n_prepositions > 0: np_expansions['NP PP'] = p
         if sum(np_expansions.values()) < 1: np_expansions['N'] += 1 - sum(np_expansions.values())
