@@ -54,6 +54,7 @@
     - 494-517: Sparsemax (old) sweep for `wte` and `res0` (over lr and exp_factor). Useless.
     - 518-529: Sparsemax (new, kds false) sweep for `res0` (over lr and exp_factor). Best 519 (65%).
     - 530-541: Sparsemax (new, kds true) sweep for `res0` (over lr and exp_factor). Best 541 (35%).
+    - 542-553: Sparsemax (new, kds true, mode dist) sweep for `res0` (over lr and exp_factor).
 - `results/scratch/3v4gwdfk`: Model trained on English (no prepositions, no relative clauses, p_conj 0.25 for nouns, 0.15 for verbs). The SAEs are:
     - 0-19: $k$-regularized sweep for `res0`. Useless.
     - 20-43: $\alpha$-regularized sweep for `res0`. Useless.
@@ -71,5 +72,7 @@
     - 0-23: $\alpha$-regularized sweep. Useless.
     - 24-43: $k$-regularized sweep. Best 43.
 - `results/scratch/bcb19qnd`: Model trained on English with adverbial and adjectival prepositional phrases (3 prepositions).
-    - 0-23: $\alpha$-regularized sweep.
+    - 0-23: $\alpha$-regularized sweep. Terrible.
+    - 24-43: $k$-regularized sweep.
 - `results/scratch/ktm5d2gn`: Model trained on English with the probability of conjunctions in NPs and VPs set to 0.3.
+- `results/scratch/87bnn1o6`: Model trained on Dyck with the probability of nesting set to 30%. Average depth about 5.
