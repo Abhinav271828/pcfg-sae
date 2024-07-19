@@ -39,6 +39,8 @@ def train(args):
             if train_it > args.train_iters: break
 
             activation = activation.to(device)
+            norm = torch.norm(activation, p=2, dim=-1)
+            activation = activation / norm.unsqueeze(-1)
             optimizer.zero_grad()
             latent, recon = model(activation)
             recon_loss = criterion(recon, activation)
@@ -50,10 +52,10 @@ def train(args):
                 enc_grad = torch.norm(model.encoder.weight.grad, dim=-1).mean()
                 enc_norm = torch.norm(model.encoder.weight, dim=-1).mean()
             else:
-                enc_grad = model.encoder[0].weight.grad
+                enc_grad = torch.norm(model.encoder[0].weight.grad, dim=-1).mean()
                 enc_norm = torch.norm(model.encoder[0].weight, dim=-1).mean()
-            dec_grad = torch.norm(model.decoder.weight.grad, dim=-1).mean()
-            dec_norm = torch.norm(model.decoder.weight, dim=-1).mean()
+            dec_grad = torch.norm(model.decoder.grad, dim=-1).mean()
+            dec_norm = torch.norm(model.decoder, dim=-1).mean()
 
             optimizer.step()
             train_loss = loss.item()
@@ -75,10 +77,10 @@ def train(args):
                            'reg_loss'  : reg_loss.item() if args.alpha else 0,
                            'train_loss': train_loss,
                            'val_loss'  : val_loss   / args.val_iters,
-                           'enc_grad'  : enc_grad,
-                           'enc_norm'  : enc_norm,
-                           'dec_grad'  : dec_grad,
-                           'dec_norm'  : dec_norm})
+                           'enc_grad'  : enc_grad.item(),
+                           'enc_norm'  : enc_norm.item(),
+                           'dec_grad'  : dec_grad.item(),
+                           'dec_norm'  : dec_norm.item()})
                 if val_loss > prev_loss: loss_increasing += 1
                 else: loss_increasing = 0
 
@@ -88,10 +90,10 @@ def train(args):
                 wandb.log({'recon_loss': recon_loss.item(),
                            'reg_loss'  : reg_loss.item() if args.alpha else 0,
                            'train_loss': train_loss,
-                           'enc_grad'  : enc_grad,
-                           'enc_norm'  : enc_norm,
-                           'dec_grad'  : dec_grad,
-                           'dec_norm'  : dec_norm})
+                           'enc_grad'  : enc_grad.item(),
+                           'enc_norm'  : enc_norm.item(),
+                           'dec_grad'  : dec_grad.item(),
+                           'dec_norm'  : dec_norm.item()})
             train_it += 1
 
     i = 0
