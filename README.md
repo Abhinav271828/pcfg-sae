@@ -65,6 +65,7 @@
     - 24-43: $k$-regularized sweep for `res0`, with val_patience 3.
     - 44-63: $k$-regularized sweep for `res0`, with val_patience 3 and max 5k iters. Best 63.
     - 64-87: $\alpha$-regularized sweep for `res0`, with val_patience 3 and max 5k iters.
+    - 88-107: $k$-regularized sweep for `res0`, using only depth-5 data.
 - `results/scratch/vx8j11gp`: Model trained on English with transitivity and no other variations.
     - 0-47: $\alpha$-regularized sweep (twice). Best 47.
     - 48-67: $k$-regularized sweep. Best 62.
@@ -76,3 +77,4 @@
     - 24-43: $k$-regularized sweep.
 - `results/scratch/ktm5d2gn`: Model trained on English with the probability of conjunctions in NPs and VPs set to 0.3.
 - `results/scratch/87bnn1o6`: Model trained on Dyck with the probability of nesting set to 30%. Average depth about 5.
+    - 0-19: $k$-regularized sweep.
