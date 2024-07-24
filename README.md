@@ -74,7 +74,7 @@
     - 24-43: $k$-regularized sweep. Best 43.
 - `results/scratch/bcb19qnd`: Model trained on English with adverbial and adjectival prepositional phrases (3 prepositions).
     - 0-23: $\alpha$-regularized sweep. Terrible.
-    - 24-43: $k$-regularized sweep.
+    - 24-43: $k$-regularized sweep. Best 30 (46%).
 - `results/scratch/ktm5d2gn`: Model trained on English with the probability of conjunctions in NPs and VPs set to 0.3.
 - `results/scratch/87bnn1o6`: Model trained on Dyck with the probability of nesting set to 30%. Average depth about 5.
-    - 0-19: $k$-regularized sweep.
+    - 0-19: $k$-regularized sweep. Best 6 (34%).
