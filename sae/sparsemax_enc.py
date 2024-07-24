@@ -70,6 +70,11 @@ class SimpleLatentProto(nn.Module):
         x_input has shape (batch_size, in_dim)
         
         """
+        flat = (len(x_input.shape) == 3)
+        if flat:
+            bz = x_input.size(0)
+            x_input = x_input.flatten(0, 1)
+
         sparsemax = Sparsemax()
         if self.lambda_positive:
             lambda_value = self.lambd**2
@@ -95,6 +100,10 @@ class SimpleLatentProto(nn.Module):
         #sparse probabilities by projecting x onto the probability simplex
         if self.solu_mode:
             x_lin = torch.matmul(x_input, weight_n.T)
-            return x_lin*x_out
+            ret = x_lin*x_out
         else:
-            return x_out
+            ret = x_out
+
+        if flat:
+            ret = ret.reshape(bz, -1, ret.size(-1))
+        return ret
